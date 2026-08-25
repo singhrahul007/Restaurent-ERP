@@ -1,0 +1,25 @@
+{
+  "name": "@niva/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node -e \"process.exit(0)\"",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "argon2": "^0.44.0"
+  },
+  "devDependencies": {
+    "@niva/config": "workspace:*",
+    "@types/node": "^22.17.2",
+    "eslint": "^9.33.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@niva/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node -e \"process.exit(0)\"",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node -e \"process.exit(0)\""
+  },
+  "devDependencies": {
+    "@niva/config": "workspace:*",
+    "eslint": "^9.33.0",
+    "typescript": "^5.9.2"
+  }
+}
