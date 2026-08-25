@@ -16,7 +16,7 @@ import { logRedactPaths } from "@niva/config";
 import { pingDatabase, type Database } from "@niva/database";
 import type { Sql } from "postgres";
 import { errorEnvelope } from "./lib/envelope.js";
-import { AppError } from "./lib/errors.js";
+import { isAppError } from "./lib/errors.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { organizationRoutes } from "./modules/organizations/organizations.routes.js";
 import { platformRoutes } from "./modules/platform/platform.routes.js";
@@ -167,7 +167,7 @@ export async function buildApp(options: BuildAppOptions) {
 
   app.setErrorHandler(
     (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
-      if (error instanceof AppError) {
+      if (isAppError(error)) {
         return reply
           .status(error.statusCode)
           .send(errorEnvelope(error.code, error.message));

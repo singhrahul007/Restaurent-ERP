@@ -7,7 +7,20 @@ export class AppError extends Error {
     this.name = "AppError";
     this.code = code;
     this.statusCode = statusCode;
+    Object.setPrototypeOf(this, new.target.prototype);
   }
+}
+
+export function isAppError(error: unknown): error is AppError {
+  return (
+    error instanceof AppError ||
+    (typeof error === "object" &&
+      error !== null &&
+      "name" in error &&
+      error.name === "AppError" &&
+      "code" in error &&
+      "statusCode" in error)
+  );
 }
 
 export function isUniqueViolation(error: unknown): boolean {

@@ -9,6 +9,7 @@ import {
   patchRestaurantBodySchema,
 } from "@niva/validation";
 import { errorEnvelope } from "../../lib/envelope.js";
+import { isAppError } from "../../lib/errors.js";
 import { requirePermission } from "../../lib/authorize.js";
 import { createRequireAuth } from "../auth/auth.middleware.js";
 import { createAuthRepository } from "../auth/auth.repository.js";
@@ -21,6 +22,15 @@ export const restaurantRoutes: FastifyPluginAsync<{
   db: Database;
   env: ApiEnv;
 }> = async (app, opts) => {
+  app.setErrorHandler((error, request, reply) => {
+    if (isAppError(error)) {
+      return reply
+        .status(error.statusCode)
+        .send(errorEnvelope(error.code, error.message));
+    }
+    return reply.send(error);
+  });
+
   const authRepository = createAuthRepository(opts.db);
   const tenancy = createTenancyRepository(opts.db);
   const requireAuth = createRequireAuth(opts.env, authRepository, tenancy);
