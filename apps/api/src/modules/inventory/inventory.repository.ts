@@ -57,6 +57,7 @@ const itemSelect = {
   baseUnitId: inventoryItems.baseUnitId,
   trackStock: inventoryItems.trackStock,
   lowStockThreshold: inventoryItems.lowStockThreshold,
+  unitCostMinor: inventoryItems.unitCostMinor,
   createdAt: inventoryItems.createdAt,
 };
 
@@ -413,6 +414,7 @@ export function createInventoryRepository(db: Database) {
       baseUnitId: string;
       trackStock?: boolean;
       lowStockThreshold?: number | null;
+      unitCostMinor?: number;
     }) {
       return withOrganizationScope(db, input.organizationId, async (tx) => {
         const [row] = await tx
@@ -425,6 +427,7 @@ export function createInventoryRepository(db: Database) {
             baseUnitId: input.baseUnitId,
             trackStock: input.trackStock,
             lowStockThreshold: input.lowStockThreshold,
+            unitCostMinor: input.unitCostMinor,
           })
           .returning(itemSelect);
         if (!row) {
@@ -437,7 +440,12 @@ export function createInventoryRepository(db: Database) {
     updateItem(
       organizationId: string,
       id: string,
-      patch: { name?: string; trackStock?: boolean; lowStockThreshold?: number | null },
+      patch: {
+        name?: string;
+        trackStock?: boolean;
+        lowStockThreshold?: number | null;
+        unitCostMinor?: number;
+      },
     ) {
       return withOrganizationScope(db, organizationId, async (tx) => {
         const [row] = await tx

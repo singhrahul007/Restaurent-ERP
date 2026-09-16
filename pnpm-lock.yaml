@@ -53,6 +53,9 @@ importers:
       '@niva/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@niva/integrations':
+        specifier: workspace:*
+        version: link:../../integrations
       '@niva/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -163,6 +166,12 @@ importers:
       '@niva/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@niva/integrations':
+        specifier: workspace:*
+        version: link:../../integrations
+      '@niva/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       bullmq:
         specifier: ^5.56.8
         version: 5.81.3
@@ -185,6 +194,31 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12)(yaml@2.9.0)
+
+  integrations:
+    dependencies:
+      '@niva/types':
+        specifier: workspace:*
+        version: link:../packages/types
+    devDependencies:
+      '@niva/config':
+        specifier: workspace:*
+        version: link:../packages/config
+      '@types/node':
+        specifier: ^22.17.2
+        version: 22.20.1
+      eslint:
+        specifier: ^9.33.0
+        version: 9.39.5(jiti@2.7.0)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12)(yaml@2.9.0)
 
   packages/auth:
     dependencies:

@@ -4,6 +4,13 @@ import { config as loadDotenv } from "dotenv";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { createLogger, loadWorkerEnv } from "@niva/config";
+import {
+  MockEmailProvider,
+  MockSmsProvider,
+  MockWhatsAppProvider,
+  processNotificationJob,
+} from "@niva/integrations";
+import type { NotificationJob } from "@niva/types";
 
 const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../..");
 loadDotenv({ path: resolve(repoRoot, ".env") });
@@ -12,8 +19,20 @@ const env = loadWorkerEnv();
 const logger = createLogger({ name: "worker", level: env.LOG_LEVEL });
 const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 
-const queue = new Queue("health", { connection });
-const worker = new Worker(
+const log = (bindings: Record<string, unknown>, message: string) => {
+  logger.info(bindings, message);
+};
+
+const ports = {
+  email: new MockEmailProvider(log),
+  sms: new MockSmsProvider(log),
+  whatsapp: new MockWhatsAppProvider(log),
+};
+
+const healthQueue = new Queue("health", { connection });
+const notificationQueue = new Queue("notifications", { connection });
+
+const healthWorker = new Worker(
   "health",
   async (job) => {
     logger.info({ jobId: job.id, name: job.name }, "health ping");
@@ -22,20 +41,36 @@ const worker = new Worker(
   { connection },
 );
 
-worker.on("completed", (job) => {
+const notificationWorker = new Worker(
+  "notifications",
+  async (job) => {
+    const data = job.data as NotificationJob;
+    await processNotificationJob(data, ports);
+    return { ok: true };
+  },
+  { connection },
+);
+
+healthWorker.on("completed", (job) => {
   logger.info({ jobId: job.id }, "health ping completed");
 });
 
-worker.on("failed", (job, error) => {
+healthWorker.on("failed", (job, error) => {
   logger.error({ jobId: job?.id, err: error }, "health ping failed");
 });
 
-await queue.add("ping", {}, { jobId: `startup-ping-${Date.now()}` });
+notificationWorker.on("failed", (job, error) => {
+  logger.error({ jobId: job?.id, err: error }, "notification job failed");
+});
+
+await healthQueue.add("ping", {}, { jobId: `startup-ping-${Date.now()}` });
 logger.info("worker started");
 
 const shutdown = async () => {
-  await worker.close();
-  await queue.close();
+  await healthWorker.close();
+  await notificationWorker.close();
+  await healthQueue.close();
+  await notificationQueue.close();
   connection.disconnect();
 };
 

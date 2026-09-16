@@ -21,6 +21,9 @@ export const apiEnvSchema = z.object({
     .transform((value) => value === "true"),
   JWT_ACCESS_SECRET: z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
   COOKIE_SECURE: z.enum(["true", "false"]).optional(),
+  INTEGRATION_KEK: z.string().min(32).optional(),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
   PLATFORM_ADMIN_EMAIL: z
     .string()
     .optional()

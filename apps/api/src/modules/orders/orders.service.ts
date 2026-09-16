@@ -1,4 +1,5 @@
 import { withOrganizationScope, writeAudit, type Database } from "@niva/database";
+import type { NormalizedPartnerOrder, PaymentGateway } from "@niva/types";
 import { AppError, isUniqueViolation } from "../../lib/errors.js";
 import type { TenantContext } from "../../lib/tenant-context.js";
 import {
@@ -31,6 +32,7 @@ export function createOrderService(
   payments: PaymentRepository,
   db: Database,
   kitchen: KitchenRepository,
+  gateway: PaymentGateway,
 ) {
   async function resolveCatalogLine(
     tenant: TenantContext,
@@ -752,10 +754,20 @@ export function createOrderService(
       input: { amountMinor: number; method: "CASH" },
     ) {
       const before = await assemble(tenant, orderId);
-      const payment = await payments.insertPayment({
+      const captured = await gateway.capture({
         organizationId: tenant.organizationId,
         orderId,
         amountMinor: input.amountMinor,
+        currency: "INR",
+        method: input.method,
+      });
+      if (captured.status !== "PAID") {
+        throw new AppError("CONFLICT", "Payment was not captured", 409);
+      }
+      const payment = await payments.insertPayment({
+        organizationId: tenant.organizationId,
+        orderId,
+        amountMinor: captured.amountMinor,
         method: input.method,
         createdBy: actorId,
       });
@@ -788,6 +800,11 @@ export function createOrderService(
       if (input.amountMinor > remaining) {
         throw new AppError("VALIDATION_ERROR", "Refund exceeds captured amount", 400);
       }
+      await gateway.refund({
+        organizationId: tenant.organizationId,
+        providerRef: payment.id,
+        amountMinor: input.amountMinor,
+      });
       const nextStatus =
         input.amountMinor === remaining ? "REFUNDED" : "PARTIALLY_REFUNDED";
       const refund = await payments.insertRefund({
@@ -820,6 +837,75 @@ export function createOrderService(
         metadata: { amountMinor: input.amountMinor, orderId: order.id },
       });
       return refund;
+    },
+
+    async ingestPartnerOrder(
+      tenant: TenantContext,
+      actorId: string,
+      restaurantId: string,
+      normalized: NormalizedPartnerOrder,
+    ) {
+      assertBranch(tenant, normalized.branchId);
+      const branch = await orders.findBranch(tenant.organizationId, normalized.branchId);
+      if (!branch || branch.restaurantId !== restaurantId) {
+        throw new AppError("NOT_FOUND", "Not found", 404);
+      }
+      const catalogItems: NewOrderItemRow[] = [];
+      for (const line of normalized.items) {
+        catalogItems.push(
+          await resolveCatalogLine(tenant, restaurantId, normalized.branchId, {
+            menuItemId: line.menuItemId,
+            qty: line.qty,
+            modifierIds: line.modifierIds,
+          }),
+        );
+      }
+      const priced = priceOrder({
+        lines: catalogItems.map((item) => ({
+          qty: item.qty,
+          unitPriceMinor: item.unitPriceMinor,
+          taxRateBps: item.taxRateBps,
+          taxInclusive: item.taxInclusive,
+        })),
+        roundingUnitMinor: 100,
+      });
+      const totals: OrderTotals = {
+        subtotalMinor: priced.subtotalMinor,
+        discountTotalMinor: priced.discountTotalMinor,
+        couponTotalMinor: priced.couponTotalMinor,
+        taxTotalMinor: priced.taxTotalMinor,
+        serviceChargeMinor: priced.serviceChargeMinor,
+        roundingMinor: priced.roundingMinor,
+        totalMinor: priced.totalMinor,
+      };
+      const items = catalogItems.map((item, index) => ({
+        ...item,
+        taxMinor: priced.lines[index]?.taxMinor ?? 0,
+        lineTotalMinor: priced.lines[index]?.lineTotalMinor ?? 0,
+      }));
+      try {
+        const created = await orders.insertOrder({
+          organizationId: tenant.organizationId,
+          restaurantId,
+          branchId: normalized.branchId,
+          tableId: null,
+          type: "ONLINE",
+          source: normalized.source,
+          sourceExternalId: normalized.externalId,
+          status: "CREATED",
+          idempotencyKey: `partner:${normalized.source}:${normalized.externalId}`,
+          notes: normalized.notes,
+          createdBy: actorId,
+          totals,
+          items,
+        });
+        return assemble(tenant, created.id);
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new AppError("CONFLICT", "Partner order already ingested", 409);
+        }
+        throw error;
+      }
     },
   };
 }

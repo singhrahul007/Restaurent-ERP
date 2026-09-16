@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { moneyMinorSchema } from "./menu.js";
 
 const qtySchema = z.number().int();
 
@@ -21,12 +22,14 @@ export const createInventoryItemBodySchema = z.object({
   baseUnitId: z.string().uuid(),
   trackStock: z.boolean().optional(),
   lowStockThreshold: qtySchema.min(0).nullable().optional(),
+  unitCostMinor: moneyMinorSchema.min(0).optional(),
 });
 
 export const patchInventoryItemBodySchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   trackStock: z.boolean().optional(),
   lowStockThreshold: qtySchema.min(0).nullable().optional(),
+  unitCostMinor: moneyMinorSchema.min(0).optional(),
 });
 
 export const createInventoryTransactionBodySchema = z

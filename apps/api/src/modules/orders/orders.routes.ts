@@ -22,6 +22,7 @@ import { createPaymentRepository } from "../payments/payments.repository.js";
 import { createKitchenRepository } from "../kitchen/kitchen.repository.js";
 import { createOrderRepository } from "./orders.repository.js";
 import { createOrderService } from "./orders.service.js";
+import { createPaymentGateway } from "@niva/integrations";
 
 function readIdempotencyKey(header: string | string[] | undefined): string | null {
   if (typeof header !== "string") {
@@ -53,6 +54,7 @@ export const orderRoutes: FastifyPluginAsync<{
     createPaymentRepository(opts.db),
     opts.db,
     createKitchenRepository(opts.db),
+    createPaymentGateway(),
   );
   const tenantAuth = [requireAuth, requireTenant];
 

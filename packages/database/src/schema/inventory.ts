@@ -93,6 +93,8 @@ export const inventoryItems = pgTable(
       .references(() => units.id, { onDelete: "restrict" }),
     trackStock: boolean("track_stock").notNull().default(true),
     lowStockThreshold: bigint("low_stock_threshold", { mode: "number" }),
+    /** Last-cost per base unit in minor currency (paise). Used for stock valuation estimates. */
+    unitCostMinor: bigint("unit_cost_minor", { mode: "number" }).notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

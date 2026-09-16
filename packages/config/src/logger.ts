@@ -18,6 +18,10 @@ export const logRedactPaths = [
   "*.resetToken",
   "*.accessToken",
   "*.refreshToken",
+  "req.body.credentials",
+  "body.credentials",
+  "*.credentials",
+  "*.secret",
 ];
 
 export type CreateLoggerOptions = {

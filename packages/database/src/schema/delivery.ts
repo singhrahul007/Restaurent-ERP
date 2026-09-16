@@ -92,7 +92,6 @@ export const deliveries = pgTable(
     index("deliveries_organization_id_idx").on(table.organizationId),
     index("deliveries_agent_id_idx").on(table.agentId),
     index("deliveries_status_idx").on(table.organizationId, table.status),
-    check("deliveries_order_type_delivery_chk", sql`${table.orderType} = 'DELIVERY'`),
     check("deliveries_cod_amount_minor_chk", sql`${table.codAmountMinor} >= 0`),
     check(
       "deliveries_cod_collected_minor_chk",

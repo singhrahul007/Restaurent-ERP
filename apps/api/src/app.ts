@@ -27,6 +27,9 @@ import { restaurantRoutes } from "./modules/restaurants/restaurants.routes.js";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 import { recipeRoutes } from "./modules/recipes/recipes.routes.js";
 import { deliveryRoutes } from "./modules/delivery/delivery.routes.js";
+import { expenseRoutes } from "./modules/expenses/expenses.routes.js";
+import { reportRoutes } from "./modules/reports/reports.routes.js";
+import { integrationRoutes } from "./modules/integrations/integrations.routes.js";
 import { staffRoutes } from "./modules/staff/staff.routes.js";
 
 export { errorEnvelope } from "./lib/envelope.js";
@@ -89,6 +92,8 @@ export async function buildApp(options: BuildAppOptions) {
         { name: "inventory", description: "Units, stock, suppliers, and purchase orders" },
         { name: "recipes", description: "Bill of materials for menu items" },
         { name: "delivery", description: "Agents, jobs, OTP, and COD" },
+        { name: "reports", description: "Sales, inventory, expenses, and operations" },
+        { name: "integrations", description: "Accounts, webhooks, and partner ingest" },
         { name: "platform", description: "Platform administration" },
         { name: "system", description: "Health and readiness" },
       ],
@@ -199,6 +204,21 @@ export async function buildApp(options: BuildAppOptions) {
     env: options.env,
   });
   await app.register(deliveryRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(expenseRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(reportRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(integrationRoutes, {
     prefix: "/api/v1",
     db: options.db,
     env: options.env,

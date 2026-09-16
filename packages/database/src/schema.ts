@@ -115,5 +115,7 @@ export {
   deliveryEvents,
   deliveryStatus,
 } from "./schema/delivery.js";
+export { expenses } from "./schema/expenses.js";
+export { integrationAccounts, integrationEvents } from "./schema/integrations.js";
 export { sessions } from "./schema/sessions.js";
 export { users, userStatus } from "./schema/users.js";

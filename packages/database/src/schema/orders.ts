@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
@@ -8,6 +9,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
   type AnyPgColumn,
@@ -16,7 +18,7 @@ import { organizations } from "./organizations.js";
 import { branches, diningTables, restaurants } from "./restaurants.js";
 import { users } from "./users.js";
 
-export const orderType = pgEnum("order_type", ["DINE_IN", "TAKEAWAY", "DELIVERY"]);
+export const orderType = pgEnum("order_type", ["DINE_IN", "TAKEAWAY", "DELIVERY", "ONLINE"]);
 
 export const orderStatus = pgEnum("order_status", [
   "DRAFT",
@@ -47,6 +49,8 @@ export const orders = pgTable(
       .references(() => branches.id, { onDelete: "restrict" }),
     tableId: uuid("table_id").references(() => diningTables.id, { onDelete: "restrict" }),
     type: orderType("type").notNull(),
+    source: varchar("source", { length: 64 }).notNull().default("pos"),
+    sourceExternalId: varchar("source_external_id", { length: 128 }),
     status: orderStatus("status").notNull().default("CREATED"),
     idempotencyKey: varchar("idempotency_key", { length: 128 }),
     notes: varchar("notes", { length: 500 }),
@@ -73,9 +77,18 @@ export const orders = pgTable(
       table.idempotencyKey,
     ),
     unique("orders_id_type_uidx").on(table.id, table.type),
+    uniqueIndex("orders_org_source_external_uidx")
+      .on(table.organizationId, table.source, table.sourceExternalId)
+      .where(sql`${table.sourceExternalId} is not null`),
     index("orders_organization_id_branch_id_created_at_idx").on(
       table.organizationId,
       table.branchId,
+      table.createdAt,
+    ),
+    index("orders_organization_id_restaurant_id_status_created_at_idx").on(
+      table.organizationId,
+      table.restaurantId,
+      table.status,
       table.createdAt,
     ),
     index("orders_table_id_idx").on(table.tableId),
@@ -109,6 +122,7 @@ export const orderItems = pgTable(
   (table) => [
     index("order_items_organization_id_idx").on(table.organizationId),
     index("order_items_order_id_idx").on(table.orderId),
+    index("order_items_organization_id_item_name_idx").on(table.organizationId, table.itemName),
   ],
 );
 

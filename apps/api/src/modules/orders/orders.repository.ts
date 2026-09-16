@@ -31,6 +31,8 @@ const orderSelect = {
   branchId: orders.branchId,
   tableId: orders.tableId,
   type: orders.type,
+  source: orders.source,
+  sourceExternalId: orders.sourceExternalId,
   status: orders.status,
   idempotencyKey: orders.idempotencyKey,
   notes: orders.notes,
@@ -347,8 +349,10 @@ export function createOrderRepository(db: Database) {
       restaurantId: string;
       branchId: string;
       tableId: string | null;
-      type: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
+      type: "DINE_IN" | "TAKEAWAY" | "DELIVERY" | "ONLINE";
       status: "DRAFT" | "CREATED";
+      source?: string;
+      sourceExternalId?: string | null;
       idempotencyKey: string | null;
       notes?: string;
       createdBy: string;
@@ -364,6 +368,8 @@ export function createOrderRepository(db: Database) {
             branchId: input.branchId,
             tableId: input.tableId,
             type: input.type,
+            source: input.source ?? "pos",
+            sourceExternalId: input.sourceExternalId,
             status: input.status,
             idempotencyKey: input.idempotencyKey,
             notes: input.notes,

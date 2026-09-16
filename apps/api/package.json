@@ -23,6 +23,7 @@
     "@niva/auth": "workspace:*",
     "@niva/config": "workspace:*",
     "@niva/database": "workspace:*",
+    "@niva/integrations": "workspace:*",
     "@niva/types": "workspace:*",
     "@niva/validation": "workspace:*",
     "@socket.io/redis-adapter": "^8.3.0",

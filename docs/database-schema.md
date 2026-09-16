@@ -73,7 +73,7 @@ Menu prices are **current selling prices** in integer minor units. Historical or
 
 | Table | Purpose |
 | --- | --- |
-| `orders` | type, status, table_id, branch_id, idempotency_key unique per org |
+| `orders` | type DINE_IN / TAKEAWAY / DELIVERY / ONLINE; `source` (default `pos`); optional `source_external_id` for partners; integer totals; no payment status column |
 | `order_items` | frozen item/variant names, qty, unit_price_minor, line totals |
 | `order_item_modifiers` | snapshot |
 | `order_discounts` | percent_bps or amount_minor |
@@ -102,7 +102,7 @@ Payment status lives on `payments` only (`PENDING`, `PAID`, `FAILED`, `REFUNDED`
 | --- | --- |
 | `units` | restaurant-scoped codes; default g/kg, ml/l, each |
 | `unit_conversions` | from_unit, to_unit, integer numerator/denominator (no float) |
-| `inventory_items` | SKU unique per restaurant, track_stock, low_stock_threshold |
+| `inventory_items` | SKU unique per restaurant, track_stock, low_stock_threshold, `unit_cost_minor` last-cost per base unit |
 | `inventory_balances` | item + branch, quantity as integer in the item **base unit** |
 | `inventory_transactions` | type, qty_base, qty_in_unit, unit, reason, actor, reference, idempotency_key unique per org |
 | `suppliers` | |
@@ -113,6 +113,8 @@ Payment status lives on `payments` only (`PENDING`, `PAID`, `FAILED`, `REFUNDED`
 | `inventory_consumptions` | unique order_id for SALE_CONSUMPTION idempotency; `reversed_at` for refund reverse |
 
 **Quantity storage:** store inventory in integer **base units** (e.g. milligrams, millilitres, each). Display converts via `units`. Never float.
+
+**Stock valuation (reports):** last-cost estimate = on-hand `quantity` × `unit_cost_minor`. Default cost is 0 until set on the item.
 
 Transaction types: `PURCHASE`, `SALE_CONSUMPTION`, `WASTAGE`, `ADJUSTMENT`, `TRANSFER_IN`, `TRANSFER_OUT`, `RETURN`.
 
@@ -128,8 +130,8 @@ Transaction types: `PURCHASE`, `SALE_CONSUMPTION`, `WASTAGE`, `ADJUSTMENT`, `TRA
 
 | Table | Purpose |
 | --- | --- |
-| `expenses` | branch, category, amount_minor |
-| `expense_categories` | |
+| `expenses` | restaurant, optional branch, category (varchar), `amount_minor`, `incurred_at` |
+| `expense_categories` | not used in v1; category is a string on `expenses` |
 
 ## SaaS billing (Phase 13)
 
@@ -145,13 +147,17 @@ Transaction types: `PURCHASE`, `SALE_CONSUMPTION`, `WASTAGE`, `ADJUSTMENT`, `TRA
 | Table | Purpose |
 | --- | --- |
 | `platform_alerts` | |
-| `integration_accounts` | org + provider, encrypted secrets |
+| `integration_accounts` | org + provider, AES-GCM `credentials_encrypted`; API GET is masked |
+| `integration_events` | inbound/outbound raw payloads for debug |
 | `outbox` | event payload, published_at |
 | `idempotency_keys` | |
 
 ## Indexing (initial)
 
 - Unique `(organization_id, email)` not on users — users email global unique
+- `orders (organization_id, restaurant_id, status, created_at)`
+- `order_items (organization_id, item_name)`
+- `payments (organization_id, method, created_at)`
 - `memberships (user_id, organization_id)` unique
 - `orders (organization_id, branch_id, created_at desc)`
 - `orders (organization_id, idempotency_key)` unique

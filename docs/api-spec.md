@@ -182,6 +182,35 @@ Permissions: `delivery.self` (own shift, jobs, earnings), `delivery.manage` (ass
 
 Maps: `maps` Google/Apple deeplinks plus `geocode` mock. No billed Maps API.
 
+## Integrations (Phase 12)
+
+Ports live in `@niva/types`. Adapters live in `@niva/integrations`. Domain services depend on ports only. POS capture/refund goes through `PaymentGateway` (`MockPaymentGateway` in this repo). Email/SMS/WhatsApp mocks log in the worker (`notifications` queue) — they do not send.
+
+**T-1204:** Razorpay/live PSP adapter is **not** implemented (no verified sandbox keys). Do not treat mock payments as a live provider.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET/PUT | `/integration-accounts` | `settings.manage`. PUT `{ provider, credentials }`. GET returns `credentialsMasked` only |
+| DELETE | `/integration-accounts/:id` | |
+| POST | `/webhooks/:provider` | Public stub. `mock` parses JSON `{ providerRef }`, writes `integration_events`, 200 |
+| POST | `/restaurants/:restaurantId/channels/mock/orders` | Mock food-delivery ingest → `ONLINE` order, `source = partner:mock` |
+
+## Analytics (Phase 11)
+
+Permissions: `reports.view` for aggregates. Expense CRUD uses `restaurant.manage`. Money fields are integers (`*Minor`). Sales windows are **UTC** calendar day / ISO week (Monday) / month. Revenue is `sum(orders.total_minor)` for `COMPLETED` orders only. AOV is `trunc(revenue / orderCount)` (0 if no orders).
+
+Stock valuation is **last-cost**: `sum(inventory_balances.quantity * inventory_items.unit_cost_minor)` in the item base unit.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/restaurants/:restaurantId/reports/sales` | Query `branchId`. `{ today, week, month, trend }` with `orderCount`, `revenueMinor`, `aovMinor` |
+| GET | `/restaurants/:restaurantId/reports/items` | Top items from `order_items` name snapshots; category from live catalog when `menuItemId` exists |
+| GET | `/restaurants/:restaurantId/reports/payments` | Sum `payments.amount_minor` by method (PAID / PARTIALLY_REFUNDED / REFUNDED) minus refunds |
+| GET | `/restaurants/:restaurantId/reports/inventory` | `{ stock: { valuationMinor, method: LAST_COST }, expenses: { amountMinor, count } }` |
+| GET | `/restaurants/:restaurantId/reports/operations` | Live `openOrders` + kitchen ticket counts (not BI) |
+| GET/POST | `/restaurants/:restaurantId/expenses` | `{ category, amountMinor, branchId?, incurredAt?, notes? }` |
+| PATCH/DELETE | `/restaurants/:restaurantId/expenses/:id` | |
+
 ## Operations (later phases)
 
 Prefix resources by restaurant/branch when it reduces leakage, e.g. `/branches/:branchId/orders`.
@@ -196,7 +225,7 @@ Illustrative (not implemented until their phase):
 | Inventory | `/branches/:branchId/inventory/items`, `.../transactions` (implemented) |
 | Recipes | `/restaurants/:id/recipes` (implemented) |
 | Delivery | `/deliveries`, `/delivery/me/shift` (implemented) |
-| Reports | `/reports/sales` (async job + download) |
+| Reports | `/restaurants/:id/reports/sales` (implemented) |
 | Platform | `/platform/metrics`, `/platform/organizations` |
 
 ## Health

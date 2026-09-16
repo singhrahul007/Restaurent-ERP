@@ -255,3 +255,21 @@ DROP POLICY IF EXISTS "delivery_events_tenant_isolation" ON "delivery_events";
 CREATE POLICY "delivery_events_tenant_isolation" ON "delivery_events"
   USING ("organization_id" = app_current_organization_id())
   WITH CHECK ("organization_id" = app_current_organization_id());
+
+ALTER TABLE "expenses" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "expenses_tenant_isolation" ON "expenses";
+CREATE POLICY "expenses_tenant_isolation" ON "expenses"
+  USING ("organization_id" = app_current_organization_id())
+  WITH CHECK ("organization_id" = app_current_organization_id());
+
+ALTER TABLE "integration_accounts" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "integration_accounts_tenant_isolation" ON "integration_accounts";
+CREATE POLICY "integration_accounts_tenant_isolation" ON "integration_accounts"
+  USING ("organization_id" = app_current_organization_id())
+  WITH CHECK ("organization_id" = app_current_organization_id());
+
+ALTER TABLE "integration_events" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "integration_events_tenant_isolation" ON "integration_events";
+CREATE POLICY "integration_events_tenant_isolation" ON "integration_events"
+  USING ("organization_id" is null or "organization_id" = app_current_organization_id())
+  WITH CHECK ("organization_id" is null or "organization_id" = app_current_organization_id());

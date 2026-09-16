@@ -7,7 +7,7 @@ CREATE TABLE "deliveries" (
 	"restaurant_id" uuid NOT NULL,
 	"branch_id" uuid NOT NULL,
 	"order_id" uuid NOT NULL,
-	"order_type" "order_type" DEFAULT 'DELIVERY' NOT NULL,
+	"order_type" "order_type" NOT NULL,
 	"agent_id" uuid NOT NULL,
 	"status" "delivery_status" DEFAULT 'ASSIGNED' NOT NULL,
 	"otp_hash" varchar(64) NOT NULL,
@@ -20,7 +20,6 @@ CREATE TABLE "deliveries" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "deliveries_order_id_uidx" UNIQUE("order_id"),
-	CONSTRAINT "deliveries_order_type_delivery_chk" CHECK ("deliveries"."order_type" = 'DELIVERY'),
 	CONSTRAINT "deliveries_cod_amount_minor_chk" CHECK ("deliveries"."cod_amount_minor" >= 0),
 	CONSTRAINT "deliveries_cod_collected_minor_chk" CHECK ("deliveries"."cod_collected_minor" is null or "deliveries"."cod_collected_minor" >= 0)
 );
@@ -44,6 +43,7 @@ CREATE TABLE "delivery_events" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "orders" ADD CONSTRAINT "orders_id_type_uidx" UNIQUE("id","type");--> statement-breakpoint
 ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_restaurant_id_restaurants_id_fk" FOREIGN KEY ("restaurant_id") REFERENCES "public"."restaurants"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deliveries" ADD CONSTRAINT "deliveries_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -58,5 +58,4 @@ CREATE INDEX "deliveries_organization_id_idx" ON "deliveries" USING btree ("orga
 CREATE INDEX "deliveries_agent_id_idx" ON "deliveries" USING btree ("agent_id");--> statement-breakpoint
 CREATE INDEX "deliveries_status_idx" ON "deliveries" USING btree ("organization_id","status");--> statement-breakpoint
 CREATE INDEX "delivery_agents_organization_id_idx" ON "delivery_agents" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "delivery_events_delivery_id_idx" ON "delivery_events" USING btree ("delivery_id");--> statement-breakpoint
-ALTER TABLE "orders" ADD CONSTRAINT "orders_id_type_uidx" UNIQUE("id","type");
+CREATE INDEX "delivery_events_delivery_id_idx" ON "delivery_events" USING btree ("delivery_id");

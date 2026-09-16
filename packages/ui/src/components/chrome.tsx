@@ -1,4 +1,7 @@
+"use client";
+
 import type { HTMLAttributes, ReactNode } from "react";
+import Link from "next/link";
 import { cn } from "../lib/cn";
 
 export function Topbar({
@@ -67,9 +70,9 @@ export function SidebarItem({
   );
   if (href) {
     return (
-      <a href={href} className={styles}>
+      <Link href={href} className={styles}>
         {children}
-      </a>
+      </Link>
     );
   }
   return (

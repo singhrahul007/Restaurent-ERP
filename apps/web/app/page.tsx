@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@niva/ui";
 
 export default function HomePage() {
@@ -9,24 +10,29 @@ export default function HomePage() {
           Restaurant operating system
         </h1>
         <p className="max-w-xl text-fg-secondary">
-          Foundation shell. Authentication, tenants, and role workspaces are implemented in
-          later phases.
+          Sign in, then use Setup to add restaurants, staff, and menu items.
         </p>
-        <a href="/login" className="text-accent">
+        <Link href="/dashboard" className="text-accent">
+          Owner dashboard
+        </Link>
+        <Link href="/ops" className="text-accent">
+          Manager ops
+        </Link>
+        <Link href="/login" className="text-accent">
           Sign in
-        </a>
-        <a href="/setup" className="text-accent">
+        </Link>
+        <Link href="/setup/restaurant" className="text-accent">
           Setup
-        </a>
-        <a href="/pos" className="text-accent">
+        </Link>
+        <Link href="/pos" className="text-accent">
           POS
-        </a>
-        <a href="/kds" className="text-accent">
+        </Link>
+        <Link href="/kds" className="text-accent">
           Kitchen
-        </a>
-        <a href="/driver" className="text-accent">
+        </Link>
+        <Link href="/driver" className="text-accent">
           Driver
-        </a>
+        </Link>
       </main>
     </AppShell>
   );

@@ -32,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${sans.variable} ${display.variable} ${mono.variable}`}>
-      <body className="min-h-screen bg-canvas text-fg-primary antialiased">
+      <body
+        className="min-h-screen bg-canvas text-fg-primary antialiased"
+        suppressHydrationWarning
+      >
         {children}
         <Toaster />
       </body>
