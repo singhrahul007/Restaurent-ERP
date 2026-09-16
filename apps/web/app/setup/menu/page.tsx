@@ -164,7 +164,7 @@ export default function MenuSetupPage() {
     <>
       <PageHeader
         title="Menu"
-        description="Categories, tax classes, and items. Prices are integer paise."
+        description="Add a category, then Add item. Prices are integer paise (₹1.00 = 100)."
         actions={
           <Button asChild>
             <Link href="/setup/menu/items/new">Add item</Link>

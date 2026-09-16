@@ -177,7 +177,10 @@ export default function StaffSetupPage() {
         }
       />
       {staff.length === 0 ? (
-        <EmptyState title="No staff" description="Invite the first teammate." />
+        <EmptyState
+          title="No teammates yet"
+          description="Use Invite (top right). They receive a membership in this organization."
+        />
       ) : (
         <Table>
           <TableHeader>

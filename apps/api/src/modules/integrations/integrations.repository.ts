@@ -62,7 +62,7 @@ export function createIntegrationRepository(db: Database) {
       });
     },
 
-    insertEvent(input: {
+    async insertEvent(input: {
       organizationId: string | null;
       provider: string;
       direction: "INBOUND" | "OUTBOUND";

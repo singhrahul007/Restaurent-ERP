@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardDescription,
@@ -117,7 +118,15 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="p-6">
-      <PageHeader title="Owner dashboard" description="Revenue, mix, stock, and expenses." />
+      <PageHeader
+        title="Owner dashboard"
+        description="Add a restaurant, staff, and menu under Setup, then sales show up here."
+        actions={
+          <Link href="/setup/restaurant" className="text-sm text-accent">
+            Open setup
+          </Link>
+        }
+      />
       <div className="mb-6 grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>

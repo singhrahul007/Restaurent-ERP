@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button, Card, CardHeader, CardTitle, Input, Label } from "@niva/ui";
 import { ApiError, api } from "../../lib/api";
-import { loadSession } from "../../lib/session";
+import { clearCachedSession, loadSession } from "../../lib/session";
 
 async function rememberTenant() {
   const me = await api<{
@@ -72,6 +72,7 @@ export default function LoginPage() {
           body: JSON.stringify({ email, password }),
         });
       }
+      clearCachedSession();
       await api("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),

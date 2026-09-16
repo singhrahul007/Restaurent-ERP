@@ -18,14 +18,20 @@ export function clearCachedSession(): void {
 
 export function loadSession(): Promise<Me> {
   if (!inflight) {
-    inflight = api<Me>("/auth/me").then((me) => {
-      sessionReady = true;
-      const organizationId = me.memberships[0]?.organizationId;
-      if (organizationId && typeof window !== "undefined") {
-        window.localStorage.setItem("niva_organization_id", organizationId);
-      }
-      return me;
-    });
+    inflight = api<Me>("/auth/me")
+      .then((me) => {
+        sessionReady = true;
+        const organizationId = me.memberships[0]?.organizationId;
+        if (organizationId && typeof window !== "undefined") {
+          window.localStorage.setItem("niva_organization_id", organizationId);
+        }
+        return me;
+      })
+      .catch((error) => {
+        inflight = null;
+        sessionReady = false;
+        throw error;
+      });
   }
   return inflight;
 }
