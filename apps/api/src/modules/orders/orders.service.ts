@@ -1,4 +1,4 @@
-import { writeAudit, type Database } from "@niva/database";
+import { withOrganizationScope, writeAudit, type Database } from "@niva/database";
 import { AppError, isUniqueViolation } from "../../lib/errors.js";
 import type { TenantContext } from "../../lib/tenant-context.js";
 import {
@@ -800,10 +800,14 @@ export function createOrderService(
       });
       const after = await payments.sumsForOrder(tenant.organizationId, order.id);
       if (order.status === "COMPLETED" && after.netPaidMinor === 0) {
-        const reversed = await reverseOrderInTx
-          ? null
-          : null;
-        void reversed;
+        const reversed = await withOrganizationScope(db, tenant.organizationId, (tx) =>
+          reverseOrderInTx(tx, {
+            organizationId: tenant.organizationId,
+            orderId: order.id,
+            actorId,
+          }),
+        );
+        assertRecipeMovement(reversed.error);
       }
       await writeAudit(db, {
         actorId,

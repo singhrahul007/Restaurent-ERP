@@ -142,6 +142,29 @@ Permissions: `inventory.view`, `inventory.manage`. Quantities are integers in th
 
 Outbox topic `inventory.low_stock` when a movement crosses the threshold from above.
 
+## Recipes (Phase 9)
+
+Permission: **`inventory.manage`** for all recipe CRUD (not `menu.manage`).
+
+Quantities on recipe lines are integers in the inventory item **base unit**. Unique recipe per menu item, or per item+variant.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET/POST | `/restaurants/:restaurantId/recipes` | `{ menuItemId, variantId?, lines: [{ inventoryItemId, qtyBase }] }` |
+| PATCH/DELETE | `/recipes/:id` | PATCH replaces lines |
+
+### Consume / reverse policy
+
+Restaurant setting `inventoryPolicy`:
+
+| Policy | Auto consume | Reverse |
+| --- | --- | --- |
+| `OFF` | None | None |
+| `MANUAL` | None (adjustments only) | None |
+| `ON_SALE` | On **order complete**, same DB tx as the status change: insert `inventory_consumptions` (unique `order_id`), `SELECT FOR UPDATE` balances, `SALE_CONSUMPTION` rows | When a **completed** order is **fully refunded** (`netPaidMinor === 0`): `RETURN` txs and `reversed_at`. Partial refunds do not reverse. Cancel before complete never consumed, so no reverse. |
+
+A second consume for the same order is a no-op (unique consumption row). A second reverse is a no-op (`reversed_at` already set). Insufficient stock fails the complete (transaction rolls back).
+
 ## Operations (later phases)
 
 Prefix resources by restaurant/branch when it reduces leakage, e.g. `/branches/:branchId/orders`.
@@ -154,7 +177,7 @@ Illustrative (not implemented until their phase):
 | Payments | `/orders/:id/payments`, `/payments/:id/refunds` |
 | Kitchen | `/branches/:branchId/kitchen/tickets` (implemented) |
 | Inventory | `/branches/:branchId/inventory/items`, `.../transactions` (implemented) |
-| Recipes | `/restaurants/:id/recipes` |
+| Recipes | `/restaurants/:id/recipes` (implemented) |
 | Delivery | `/deliveries`, `/delivery/me/shift` |
 | Reports | `/reports/sales` (async job + download) |
 | Platform | `/platform/metrics`, `/platform/organizations` |

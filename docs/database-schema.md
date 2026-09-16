@@ -108,9 +108,9 @@ Payment status lives on `payments` only (`PENDING`, `PAID`, `FAILED`, `REFUNDED`
 | `suppliers` | |
 | `purchase_orders` / `purchase_order_lines` | |
 | `wastage_records` | links to transaction |
-| `recipes` | menu_item (+ variant) |
-| `recipe_lines` | inventory_item, qty in base unit |
-| `inventory_consumptions` | order_id unique for idempotency of SALE_CONSUMPTION |
+| `recipes` | unique per menu item, or per item+variant; lines in base units |
+| `recipe_lines` | inventory_item, qty_base integer |
+| `inventory_consumptions` | unique order_id for SALE_CONSUMPTION idempotency; `reversed_at` for refund reverse |
 
 **Quantity storage:** store inventory in integer **base units** (e.g. milligrams, millilitres, each). Display converts via `units`. Never float.
 
@@ -166,6 +166,6 @@ Transaction types: `PURCHASE`, `SALE_CONSUMPTION`, `WASTAGE`, `ADJUSTMENT`, `TRA
 - Purchase receive: lock PO, PURCHASE rows, mark RECEIVED
 - Branch transfer: TRANSFER_OUT + TRANSFER_IN in one tx
 - Payment record + order completion eligibility
-- Recipe consume: lock balances, insert transactions, insert consumption row (unique order_id)
-- Refund + optional stock reversal
+- Recipe consume: lock balances, insert `SALE_CONSUMPTION` transactions, insert consumption row (unique order_id) in the same tx as order complete
+- Full refund of a consumed order: `RETURN` txs + set `reversed_at` (idempotent)
 - Refresh token rotation: revoke old, insert new, same tx

@@ -43,7 +43,7 @@ payments.create
 payments.refund
 
 inventory.view
-inventory.manage
+inventory.manage  # includes recipe CRUD
 
 reports.view
 

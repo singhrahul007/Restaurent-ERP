@@ -10,11 +10,23 @@ export const recipeLineBodySchema = z.object({
 export const createRecipeBodySchema = z.object({
   menuItemId: z.string().uuid(),
   variantId: z.string().uuid().nullable().optional(),
-  lines: z.array(recipeLineBodySchema).min(1),
+  lines: z
+    .array(recipeLineBodySchema)
+    .min(1)
+    .refine(
+      (lines) => new Set(lines.map((line) => line.inventoryItemId)).size === lines.length,
+      "Duplicate inventory items in recipe",
+    ),
 });
 
 export const patchRecipeBodySchema = z.object({
-  lines: z.array(recipeLineBodySchema).min(1),
+  lines: z
+    .array(recipeLineBodySchema)
+    .min(1)
+    .refine(
+      (lines) => new Set(lines.map((line) => line.inventoryItemId)).size === lines.length,
+      "Duplicate inventory items in recipe",
+    ),
 });
 
 export type CreateRecipeBody = z.infer<typeof createRecipeBodySchema>;

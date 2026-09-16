@@ -74,6 +74,9 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
             <SidebarItem href="/setup/suppliers" active={pathname.startsWith("/setup/suppliers")}>
               Suppliers
             </SidebarItem>
+            <SidebarItem href="/setup/recipes" active={pathname.startsWith("/setup/recipes")}>
+              Recipes
+            </SidebarItem>
             <Link href="/" className="mt-4 px-3 text-sm text-fg-muted">
               Home
             </Link>
