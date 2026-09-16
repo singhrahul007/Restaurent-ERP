@@ -165,6 +165,23 @@ Restaurant setting `inventoryPolicy`:
 
 A second consume for the same order is a no-op (unique consumption row). A second reverse is a no-op (`reversed_at` already set). Insufficient stock fails the complete (transaction rolls back).
 
+## Delivery (Phase 10)
+
+Permissions: `delivery.self` (own shift, jobs, earnings), `delivery.manage` (assign). Order type `DELIVERY` is required; `deliveries (order_id, order_type)` FK references `orders (id, type)` with `order_type = DELIVERY`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET/POST | `/delivery/me`, `/delivery/me/shift` | `{ online }`; audit `SETTINGS_CHANGED` |
+| GET | `/delivery/me/jobs` | Assigned jobs only |
+| GET | `/delivery/me/earnings?date=` | Daily count + `codCollectedMinor` for self |
+| GET | `/delivery/agents` | `delivery.manage` |
+| POST | `/deliveries` | Assign; plaintext OTP **once**; socket `delivery.assigned` on `user:{id}` |
+| GET | `/deliveries/:id` | No `otp` / `otpHash` |
+| POST | `/deliveries/:id/pickup` | `ASSIGNED` → `PICKED_UP` |
+| POST | `/deliveries/:id/confirm` | `{ otp, codCollectedMinor }` integers |
+
+Maps: `maps` Google/Apple deeplinks plus `geocode` mock. No billed Maps API.
+
 ## Operations (later phases)
 
 Prefix resources by restaurant/branch when it reduces leakage, e.g. `/branches/:branchId/orders`.
@@ -178,7 +195,7 @@ Illustrative (not implemented until their phase):
 | Kitchen | `/branches/:branchId/kitchen/tickets` (implemented) |
 | Inventory | `/branches/:branchId/inventory/items`, `.../transactions` (implemented) |
 | Recipes | `/restaurants/:id/recipes` (implemented) |
-| Delivery | `/deliveries`, `/delivery/me/shift` |
+| Delivery | `/deliveries`, `/delivery/me/shift` (implemented) |
 | Reports | `/reports/sales` (async job + download) |
 | Platform | `/platform/metrics`, `/platform/organizations` |
 

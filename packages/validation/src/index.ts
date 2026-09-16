@@ -112,4 +112,12 @@ export {
   type CreateRecipeBody,
   type PatchRecipeBody,
 } from "./recipes.js";
+export {
+  assignDeliveryBodySchema,
+  confirmDeliveryBodySchema,
+  deliveryShiftBodySchema,
+  type AssignDeliveryBody,
+  type ConfirmDeliveryBody,
+  type DeliveryShiftBody,
+} from "./delivery.js";
 

@@ -237,3 +237,21 @@ DROP POLICY IF EXISTS "inventory_consumptions_tenant_isolation" ON "inventory_co
 CREATE POLICY "inventory_consumptions_tenant_isolation" ON "inventory_consumptions"
   USING ("organization_id" = app_current_organization_id())
   WITH CHECK ("organization_id" = app_current_organization_id());
+
+ALTER TABLE "delivery_agents" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "delivery_agents_tenant_isolation" ON "delivery_agents";
+CREATE POLICY "delivery_agents_tenant_isolation" ON "delivery_agents"
+  USING ("organization_id" = app_current_organization_id())
+  WITH CHECK ("organization_id" = app_current_organization_id());
+
+ALTER TABLE "deliveries" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "deliveries_tenant_isolation" ON "deliveries";
+CREATE POLICY "deliveries_tenant_isolation" ON "deliveries"
+  USING ("organization_id" = app_current_organization_id())
+  WITH CHECK ("organization_id" = app_current_organization_id());
+
+ALTER TABLE "delivery_events" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "delivery_events_tenant_isolation" ON "delivery_events";
+CREATE POLICY "delivery_events_tenant_isolation" ON "delivery_events"
+  USING ("organization_id" = app_current_organization_id())
+  WITH CHECK ("organization_id" = app_current_organization_id());

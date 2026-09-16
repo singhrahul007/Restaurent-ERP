@@ -120,9 +120,9 @@ Transaction types: `PURCHASE`, `SALE_CONSUMPTION`, `WASTAGE`, `ADJUSTMENT`, `TRA
 
 | Table | Purpose |
 | --- | --- |
-| `delivery_agents` | user + org, online flag |
-| `deliveries` | order_id, agent_id, status, otp_hash, cod_amount_minor |
-| `delivery_events` | |
+| `delivery_agents` | user + org, unique, online flag |
+| `deliveries` | order_id unique; composite FK `(order_id, order_type)` to `orders` with type `DELIVERY`; otp_hash; integer `cod_amount_minor` / `cod_collected_minor` |
+| `delivery_events` | ASSIGNED, PICKED_UP, DELIVERED, COD_RECORDED, CANCELLED |
 
 ## Finance ops
 

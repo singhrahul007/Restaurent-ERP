@@ -24,6 +24,9 @@ export default function HomePage() {
         <a href="/kds" className="text-accent">
           Kitchen
         </a>
+        <a href="/driver" className="text-accent">
+          Driver
+        </a>
       </main>
     </AppShell>
   );

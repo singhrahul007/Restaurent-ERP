@@ -9,7 +9,7 @@ export const createOrderItemBodySchema = z.object({
 });
 
 export const createOrderBodySchema = z.object({
-  type: z.enum(["DINE_IN", "TAKEAWAY"]),
+  type: z.enum(["DINE_IN", "TAKEAWAY", "DELIVERY"]),
   status: z.enum(["DRAFT", "CREATED"]).optional(),
   tableId: z.string().uuid().nullable().optional(),
   notes: z.string().trim().max(500).optional(),

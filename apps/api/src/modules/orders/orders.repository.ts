@@ -347,7 +347,7 @@ export function createOrderRepository(db: Database) {
       restaurantId: string;
       branchId: string;
       tableId: string | null;
-      type: "DINE_IN" | "TAKEAWAY";
+      type: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
       status: "DRAFT" | "CREATED";
       idempotencyKey: string | null;
       notes?: string;

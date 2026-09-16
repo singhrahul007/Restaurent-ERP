@@ -63,6 +63,10 @@ export async function attachSocketIo(
   });
 
   io.on("connection", (socket) => {
+    const connectedUserId = socket.data.userId as string | undefined;
+    if (connectedUserId) {
+      void socket.join(`user:${connectedUserId}`);
+    }
     socket.on(
       "join",
       (room: string, ack?: (error?: string) => void) => {

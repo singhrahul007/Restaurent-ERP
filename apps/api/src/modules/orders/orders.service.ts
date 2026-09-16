@@ -229,7 +229,7 @@ export function createOrderService(
       actorId: string,
       branchId: string,
       input: {
-        type: "DINE_IN" | "TAKEAWAY";
+        type: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
         status?: "DRAFT" | "CREATED";
         tableId?: string | null;
         notes?: string;
@@ -272,7 +272,7 @@ export function createOrderService(
           throw new AppError("CONFLICT", "Table is occupied", 409);
         }
       } else if (input.tableId) {
-        throw new AppError("VALIDATION_ERROR", "Takeaway orders cannot attach a table", 400);
+        throw new AppError("VALIDATION_ERROR", "Only dine-in orders can attach a table", 400);
       }
 
       const status = input.status ?? "CREATED";
@@ -602,8 +602,8 @@ export function createOrderService(
       if (toStatus === "SERVED" && order.type !== "DINE_IN") {
         throw new AppError("INVALID_STATE_TRANSITION", "SERVED is dine-in only", 409);
       }
-      if (toStatus === "HANDED_OVER" && order.type !== "TAKEAWAY") {
-        throw new AppError("INVALID_STATE_TRANSITION", "HANDED_OVER is takeaway only", 409);
+      if (toStatus === "HANDED_OVER" && order.type === "DINE_IN") {
+        throw new AppError("INVALID_STATE_TRANSITION", "HANDED_OVER is not dine-in", 409);
       }
       assertOrderTransition(order.status, toStatus);
       await orders.transition({

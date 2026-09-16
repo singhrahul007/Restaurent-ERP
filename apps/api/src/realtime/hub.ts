@@ -6,6 +6,14 @@ export function setKitchenEmitter(value: typeof emitter) {
   emitter = value;
 }
 
+export function userRoom(userId: string): string {
+  return `user:${userId}`;
+}
+
+export function emitUser(userId: string, event: string, payload: unknown): void {
+  emitter?.to(userRoom(userId)).emit(event, payload);
+}
+
 export function kitchenRoom(branchId: string): string {
   return `kitchen:${branchId}`;
 }

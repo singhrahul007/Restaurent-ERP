@@ -16,7 +16,7 @@ import { organizations } from "./organizations.js";
 import { branches, diningTables, restaurants } from "./restaurants.js";
 import { users } from "./users.js";
 
-export const orderType = pgEnum("order_type", ["DINE_IN", "TAKEAWAY"]);
+export const orderType = pgEnum("order_type", ["DINE_IN", "TAKEAWAY", "DELIVERY"]);
 
 export const orderStatus = pgEnum("order_status", [
   "DRAFT",
@@ -72,6 +72,7 @@ export const orders = pgTable(
       table.organizationId,
       table.idempotencyKey,
     ),
+    unique("orders_id_type_uidx").on(table.id, table.type),
     index("orders_organization_id_branch_id_created_at_idx").on(
       table.organizationId,
       table.branchId,
