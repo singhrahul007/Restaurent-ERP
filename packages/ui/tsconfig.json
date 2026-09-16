@@ -1,4 +1,4 @@
 {
-  "extends": "@niva/config/tsconfig.node.json",
-  "include": ["src/**/*.ts"]
+  "extends": "@niva/config/tsconfig.react.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

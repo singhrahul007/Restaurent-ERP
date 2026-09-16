@@ -27,20 +27,18 @@ describe.skipIf(!hasDatabase)("tenant isolation", () => {
   const suffix = Date.now();
   const ownerA = `a-${suffix}@example.com`;
   const ownerB = `b-${suffix}@example.com`;
-  const staffA = `staff-${suffix}@example.com`;
   const password = "longenough1";
 
   afterAll(async () => {
     await db.delete(users).where(eq(users.email, ownerA));
     await db.delete(users).where(eq(users.email, ownerB));
-    await db.delete(users).where(eq(users.email, staffA));
     await sql.end();
   });
 
   it("isolates orgs, loads owner permissions, and hides cross-tenant restaurants", async () => {
     const app = await buildApp({ env, sql, db });
 
-    for (const email of [ownerA, ownerB, staffA]) {
+    for (const email of [ownerA, ownerB]) {
       const created = await app.inject({
         method: "POST",
         url: "/api/v1/auth/register",

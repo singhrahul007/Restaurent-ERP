@@ -10,7 +10,8 @@
     "./prettier": "./prettier.config.js",
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./tsconfig.node.json": "./tsconfig.node.json",
-    "./tsconfig.next.json": "./tsconfig.next.json"
+    "./tsconfig.next.json": "./tsconfig.next.json",
+    "./tsconfig.react.json": "./tsconfig.react.json"
   },
   "scripts": {
     "build": "node -e \"process.exit(0)\"",

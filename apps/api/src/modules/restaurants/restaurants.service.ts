@@ -28,7 +28,20 @@ export function createRestaurantService(
 
     create(
       tenant: TenantContext,
-      input: { name: string; currency?: string; timezone?: string },
+      input: {
+        name: string;
+        currency?: string;
+        timezone?: string;
+        taxInclusive?: boolean;
+        kitchenSoundEnabled?: boolean;
+        inventoryPolicy?: "OFF" | "ON_SALE" | "MANUAL";
+        addressLine1?: string;
+        addressLine2?: string;
+        city?: string;
+        region?: string;
+        postalCode?: string;
+        country?: string;
+      },
     ) {
       return restaurants.insertRestaurant({
         organizationId: tenant.organizationId,
@@ -39,7 +52,20 @@ export function createRestaurantService(
     async update(
       tenant: TenantContext,
       id: string,
-      patch: { name?: string; currency?: string; timezone?: string },
+      patch: {
+        name?: string;
+        currency?: string;
+        timezone?: string;
+        taxInclusive?: boolean;
+        kitchenSoundEnabled?: boolean;
+        inventoryPolicy?: "OFF" | "ON_SALE" | "MANUAL";
+        addressLine1?: string;
+        addressLine2?: string;
+        city?: string;
+        region?: string;
+        postalCode?: string;
+        country?: string;
+      },
     ) {
       const row = await restaurants.updateRestaurant(tenant.organizationId, id, patch);
       if (!row) {
@@ -70,7 +96,11 @@ export function createRestaurantService(
       );
     },
 
-    async createBranch(tenant: TenantContext, restaurantId: string, name: string) {
+    async createBranch(
+      tenant: TenantContext,
+      restaurantId: string,
+      input: { name: string; posIdleTimeoutMinutes?: number },
+    ) {
       const restaurant = await restaurants.findRestaurant(
         tenant.organizationId,
         restaurantId,
@@ -81,7 +111,8 @@ export function createRestaurantService(
       return restaurants.insertBranch({
         organizationId: tenant.organizationId,
         restaurantId,
-        name,
+        name: input.name,
+        posIdleTimeoutMinutes: input.posIdleTimeoutMinutes,
       });
     },
 
@@ -94,9 +125,13 @@ export function createRestaurantService(
       return row;
     },
 
-    async updateBranch(tenant: TenantContext, id: string, name: string) {
+    async updateBranch(
+      tenant: TenantContext,
+      id: string,
+      patch: { name?: string; posIdleTimeoutMinutes?: number },
+    ) {
       assertBranchAccess(tenant, id);
-      const row = await restaurants.updateBranch(tenant.organizationId, id, name);
+      const row = await restaurants.updateBranch(tenant.organizationId, id, patch);
       if (!row) {
         throw new AppError("NOT_FOUND", "Not found", 404);
       }
@@ -158,6 +193,75 @@ export function createRestaurantService(
         branchId,
         membershipId,
       );
+      if (!deleted) {
+        throw new AppError("NOT_FOUND", "Not found", 404);
+      }
+    },
+
+    async listTables(tenant: TenantContext, branchId: string) {
+      await this.getBranch(tenant, branchId);
+      return restaurants.listDiningTables(
+        tenant.organizationId,
+        branchId,
+        tenant.allowedBranchIds,
+      );
+    },
+
+    async createTable(
+      tenant: TenantContext,
+      branchId: string,
+      input: { code: string; floor?: string; seats?: number },
+    ) {
+      await this.getBranch(tenant, branchId);
+      try {
+        return await restaurants.insertDiningTable({
+          organizationId: tenant.organizationId,
+          branchId,
+          ...input,
+        });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new AppError("CONFLICT", "Table code already exists on this branch", 409);
+        }
+        throw error;
+      }
+    },
+
+    async updateTable(
+      tenant: TenantContext,
+      id: string,
+      patch: { code?: string; floor?: string | null; seats?: number | null },
+    ) {
+      const existing = await restaurants.findDiningTable(tenant.organizationId, id);
+      if (!existing) {
+        throw new AppError("NOT_FOUND", "Not found", 404);
+      }
+      assertBranchAccess(tenant, existing.branchId);
+      try {
+        const row = await restaurants.updateDiningTable(
+          tenant.organizationId,
+          id,
+          patch,
+        );
+        if (!row) {
+          throw new AppError("NOT_FOUND", "Not found", 404);
+        }
+        return row;
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new AppError("CONFLICT", "Table code already exists on this branch", 409);
+        }
+        throw error;
+      }
+    },
+
+    async removeTable(tenant: TenantContext, id: string) {
+      const existing = await restaurants.findDiningTable(tenant.organizationId, id);
+      if (!existing) {
+        throw new AppError("NOT_FOUND", "Not found", 404);
+      }
+      assertBranchAccess(tenant, existing.branchId);
+      const deleted = await restaurants.deleteDiningTable(tenant.organizationId, id);
       if (!deleted) {
         throw new AppError("NOT_FOUND", "Not found", 404);
       }

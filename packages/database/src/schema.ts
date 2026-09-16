@@ -28,15 +28,85 @@ export {
   passwordResetTokensRelations,
   permissionsRelations,
   restaurantsRelations,
+  restaurantSettingsRelations,
+  diningTablesRelations,
+  menuAvailabilityOverridesRelations,
+  menuCategoriesRelations,
+  menuItemModifierGroupsRelations,
+  menuItemsRelations,
+  menuItemVariantsRelations,
+  modifierGroupsRelations,
+  modifiersRelations,
+  taxClassesRelations,
+  taxRatesRelations,
   rolePermissionsRelations,
   rolesRelations,
   sessionsRelations,
   usersRelations,
 } from "./schema/relations.js";
 export {
+  menuAvailabilityOverrides,
+  menuCategories,
+  menuItemModifierGroups,
+  menuItems,
+  menuItemVariants,
+  modifierGroups,
+  modifiers,
+  taxClasses,
+  taxRates,
+} from "./schema/menu.js";
+export {
   branchAssignments,
   branches,
+  diningTableStatus,
+  diningTables,
+  inventoryPolicy,
+  restaurantSettings,
   restaurants,
 } from "./schema/restaurants.js";
+export {
+  kitchenTicketItemStatus,
+  kitchenTicketItems,
+  kitchenTicketStatus,
+  kitchenTickets,
+} from "./schema/kitchen.js";
+export {
+  couponRedemptions,
+  coupons,
+  orderDiscountType,
+  orderDiscounts,
+  orderItemModifiers,
+  orderItems,
+  orderStatus,
+  orderStatusHistory,
+  orderType,
+  orders,
+  outbox,
+} from "./schema/orders.js";
+export {
+  paymentMethod,
+  paymentStatus,
+  payments,
+  refunds,
+} from "./schema/payments.js";
+export {
+  inventoryBalances,
+  inventoryItems,
+  inventoryTransactionType,
+  inventoryTransactions,
+  purchaseOrderLines,
+  purchaseOrderStatus,
+  purchaseOrders,
+  suppliers,
+  unitConversions,
+  unitDimension,
+  units,
+  wastageRecords,
+} from "./schema/inventory.js";
+export {
+  inventoryConsumptions,
+  recipeLines,
+  recipes,
+} from "./schema/recipes.js";
 export { sessions } from "./schema/sessions.js";
 export { users, userStatus } from "./schema/users.js";

@@ -20,7 +20,12 @@ import { isAppError } from "./lib/errors.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { organizationRoutes } from "./modules/organizations/organizations.routes.js";
 import { platformRoutes } from "./modules/platform/platform.routes.js";
+import { kitchenRoutes } from "./modules/kitchen/kitchen.routes.js";
+import { menuRoutes } from "./modules/menu/menu.routes.js";
+import { orderRoutes } from "./modules/orders/orders.routes.js";
 import { restaurantRoutes } from "./modules/restaurants/restaurants.routes.js";
+import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
+import { staffRoutes } from "./modules/staff/staff.routes.js";
 
 export { errorEnvelope } from "./lib/envelope.js";
 
@@ -76,6 +81,10 @@ export async function buildApp(options: BuildAppOptions) {
       tags: [
         { name: "auth", description: "Identity, sessions, and password recovery" },
         { name: "tenancy", description: "Organizations, restaurants, and branches" },
+        { name: "menu", description: "Tax classes, categories, items, and modifiers" },
+        { name: "orders", description: "POS orders, payments, and coupons" },
+        { name: "kitchen", description: "Kitchen display tickets" },
+        { name: "inventory", description: "Units, stock, suppliers, and purchase orders" },
         { name: "platform", description: "Platform administration" },
         { name: "system", description: "Health and readiness" },
       ],
@@ -151,6 +160,31 @@ export async function buildApp(options: BuildAppOptions) {
     env: options.env,
   });
   await app.register(restaurantRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(staffRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(menuRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(orderRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(kitchenRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(inventoryRoutes, {
     prefix: "/api/v1",
     db: options.db,
     env: options.env,

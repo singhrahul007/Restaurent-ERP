@@ -26,7 +26,7 @@ const close = async () => {
 
 try {
   await app.listen({ host: env.HOST, port: env.PORT });
-  const realtime = await attachSocketIo(app.server, redis);
+  const realtime = await attachSocketIo(app.server, redis, { env, db });
   closeRealtime = realtime.close;
   app.log.info({ port: env.PORT }, "api listening");
 } catch (error) {

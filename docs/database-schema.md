@@ -9,7 +9,8 @@ Timestamps: `created_at`, `updated_at` (`timestamptz`). Actor: `created_by` / `u
 - Application: every query filters `organization_id = ctx.organizationId`.
 - RLS: enable on tenant tables; policy `organization_id = current_setting('app.organization_id')::uuid`.
 - API sets `SET LOCAL app.organization_id` at transaction start (`setLocalOrganizationId` in `packages/database/src/rls.ts`).
-- **FK delete:** `organizations` cannot be deleted while `memberships` or `restaurants` exist (`ON DELETE RESTRICT`). User delete cascades memberships. Restaurant delete cascades branches and assignments. `membership_roles.role_id` is `RESTRICT`.
+- **FK delete:** `organizations` cannot be deleted while `memberships` or `restaurants` exist (`ON DELETE RESTRICT`). User delete cascades memberships. Restaurant delete cascades branches, settings, and assignments. `membership_roles.role_id` is `RESTRICT`.
+- Branches store `pos_idle_timeout_minutes` (default 15) for POS session lock.
 - Platform tables (`platform_*`, `users` global identity) are not org-scoped; access via `platform.manage`.
 
 `users` is global (email unique). Access to restaurants is via `memberships` and `branch_assignments`.
@@ -22,7 +23,7 @@ Timestamps: `created_at`, `updated_at` (`timestamptz`). Actor: `created_by` / `u
 | `sessions` | Refresh token hash, device, user_agent, ip, expires_at, revoked_at |
 | `email_verifications` / `otp_challenges` | Short-lived hashed codes |
 | `organizations` | Tenant; billing customer later |
-| `memberships` | user ↔ organization; `is_owner` flag |
+| `memberships` | user ↔ organization; unique `(user_id, organization_id)`; `is_owner`; org FK **RESTRICT** |
 | `membership_roles` | membership ↔ role (many roles) |
 | `roles` | org-defined or system seed; `is_system` |
 | `permissions` | Catalog strings |
@@ -38,8 +39,8 @@ Timestamps: `created_at`, `updated_at` (`timestamptz`). Actor: `created_by` / `u
 
 | Table | Purpose |
 | --- | --- |
-| `restaurant_settings` | timezone, currency, tax inclusive flag, inventory policy |
-| `tables` | floor, capacity, status, qr_token_hash |
+| `restaurant_settings` | 1:1 with restaurant; timezone default Asia/Kolkata, currency INR, tax inclusive, inventory policy `OFF`/`ON_SALE`/`MANUAL`, address |
+| `dining_tables` | Per branch; unique `(branch_id, code)`; not POS sessions |
 | `staff_profiles` | employment fields linked to user + org |
 | `shifts` | planned intervals per branch |
 | `shift_punches` | clock in/out |
@@ -48,15 +49,17 @@ Timestamps: `created_at`, `updated_at` (`timestamptz`). Actor: `created_by` / `u
 
 | Table | Purpose |
 | --- | --- |
-| `menu_categories` | per restaurant (or branch overlay later) |
-| `menu_items` | name, description, base_price_minor, tax_class_id, available |
-| `menu_item_variants` | size/sku, price_delta_minor |
-| `modifier_groups` | min/max select |
-| `modifiers` | price_delta_minor |
+| `menu_categories` | per restaurant; optional `parent_id` tree |
+| `menu_items` | name, description, `base_price_minor` bigint, tax_class_id, available |
+| `menu_item_variants` | size/sku, `price_delta_minor` bigint |
+| `modifier_groups` | min/max select (`max >= min`) |
+| `modifiers` | `price_delta_minor` bigint |
 | `menu_item_modifier_groups` | M2M |
-| `tax_classes` / `tax_rates` | GST-style rates; effective dates |
+| `tax_classes` | name, inclusive flag |
+| `tax_rates` | integer basis points: `rate_bps`, `cgst_bps`, `sgst_bps`, `igst_bps`; effective dates |
+| `menu_availability_overrides` | 86 overlay; `branch_id` null = restaurant-wide |
 
-Menu prices are **current selling prices**. Historical order lines store frozen amounts.
+Menu prices are **current selling prices** in integer minor units. Historical order lines store frozen amounts (`freezeMenuLine`). POS reads `effectiveAvailable` from item + overlay.
 
 ## Customers
 
@@ -70,38 +73,38 @@ Menu prices are **current selling prices**. Historical order lines store frozen 
 
 | Table | Purpose |
 | --- | --- |
-| `orders` | type, status, table_id, customer_id, branch_id, idempotency_key unique per org |
-| `order_items` | item snapshot name, qty, unit_price_minor, line totals |
+| `orders` | type, status, table_id, branch_id, idempotency_key unique per org |
+| `order_items` | frozen item/variant names, qty, unit_price_minor, line totals |
 | `order_item_modifiers` | snapshot |
-| `order_discounts` | |
+| `order_discounts` | percent_bps or amount_minor |
 | `order_status_history` | immutable transitions |
-| `kitchen_tickets` | derived from order for a station/branch |
-| `kitchen_ticket_items` | |
-| `coupons` / `coupon_redemptions` | |
+| `coupons` / `coupon_redemptions` | one coupon per order; max_redemptions across orders |
+| `outbox` | topic + payload; `published_at` null until processed |
+| `kitchen_tickets` | one ticket per confirmed order; status NEW / IN_PROGRESS / READY / CANCELLED |
+| `kitchen_ticket_items` | name, qty, modifier names JSON (no prices) |
 
 Order `status` enum: `DRAFT`, `CREATED`, `CONFIRMED`, `PREPARING`, `READY`, `SERVED`, `HANDED_OVER`, `COMPLETED`, `CANCELLED`.
 
-Do not store payment status on `orders`.
+Do not store payment status on `orders`. Balance = `total_minor` − (captured payments − refunds).
 
 ## Payments
 
 | Table | Purpose |
 | --- | --- |
-| `payments` | order_id, amount_minor, status, method, provider |
-| `payment_attempts` | PSP raw normalized |
-| `refunds` | payment_id, amount_minor, reason |
+| `payments` | order_id, amount_minor, status, method (`CASH`) |
+| `refunds` | payment_id, amount_minor, reason; cannot exceed captured remainder |
 
-Payment status: `PENDING`, `PARTIALLY_PAID` (derived or on order **balance** view), `PAID`, `FAILED`, `REFUNDED`, `PARTIALLY_REFUNDED`. Prefer computing order balance from sum(payments) − sum(refunds) vs order total.
+Payment status lives on `payments` only (`PENDING`, `PAID`, `FAILED`, `REFUNDED`, `PARTIALLY_REFUNDED`). Creating a payment does not change `orders.status`. Order balance = `total_minor` − (captured payments − refunds).
 
 ## Inventory and recipes
 
 | Table | Purpose |
 | --- | --- |
-| `units` | org units |
-| `unit_conversions` | from_unit, to_unit, factor as rational stored as integer numerator/denominator |
-| `inventory_items` | SKU, track_stock |
-| `inventory_balances` | item + branch, quantity as integer in **base unit minor** (e.g. milligrams / millilitres) documented per unit type |
-| `inventory_transactions` | type, qty, unit, source, reference_type, reference_id, actor |
+| `units` | restaurant-scoped codes; default g/kg, ml/l, each |
+| `unit_conversions` | from_unit, to_unit, integer numerator/denominator (no float) |
+| `inventory_items` | SKU unique per restaurant, track_stock, low_stock_threshold |
+| `inventory_balances` | item + branch, quantity as integer in the item **base unit** |
+| `inventory_transactions` | type, qty_base, qty_in_unit, unit, reason, actor, reference, idempotency_key unique per org |
 | `suppliers` | |
 | `purchase_orders` / `purchase_order_lines` | |
 | `wastage_records` | links to transaction |
@@ -159,6 +162,9 @@ Transaction types: `PURCHASE`, `SALE_CONSUMPTION`, `WASTAGE`, `ADJUSTMENT`, `TRA
 ## Critical transactions
 
 - Order confirm + kitchen tickets + outbox
+- Inventory movement: insert transaction + update/insert balance (and wastage/outbox) in one tx
+- Purchase receive: lock PO, PURCHASE rows, mark RECEIVED
+- Branch transfer: TRANSFER_OUT + TRANSFER_IN in one tx
 - Payment record + order completion eligibility
 - Recipe consume: lock balances, insert transactions, insert consumption row (unique order_id)
 - Refund + optional stock reversal

@@ -32,13 +32,19 @@ export function isAuthApiPath(url: string): boolean {
 export function requirePermission(
   code: PermissionCode,
 ): preHandlerAsyncHookHandler {
+  return requireAnyPermission(code);
+}
+
+export function requireAnyPermission(
+  ...codes: PermissionCode[]
+): preHandlerAsyncHookHandler {
   return async function requirePermissionHandler(request, reply) {
     if (isAuthApiPath(request.url)) {
       return;
     }
 
     const granted = request.permissions ?? loadPermissions();
-    if (!hasPermission(granted, code)) {
+    if (!codes.some((code) => hasPermission(granted, code))) {
       return reply.status(403).send(FORBIDDEN);
     }
   };

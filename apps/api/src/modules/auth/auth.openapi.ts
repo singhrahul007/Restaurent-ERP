@@ -34,6 +34,19 @@ const userSchema = {
       type: "string",
       enum: ["PENDING_VERIFICATION", "ACTIVE", "DISABLED"],
     },
+    isPlatformAdmin: { type: "boolean" },
+  },
+};
+
+const membershipSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    id: { type: "string", format: "uuid" },
+    organizationId: { type: "string", format: "uuid" },
+    organizationName: { type: "string" },
+    isOwner: { type: "boolean" },
+    roles: { type: "array", items: { type: "string" } },
   },
 };
 
@@ -223,8 +236,9 @@ export const meSchema: FastifySchema = {
           type: "object",
           properties: {
             user: userSchema,
-            memberships: { type: "array", items: { type: "object" } },
+            memberships: { type: "array", items: membershipSchema },
             permissions: { type: "array", items: { type: "string" } },
+            activeOrganizationId: { type: "string", format: "uuid", nullable: true },
           },
         },
         meta: metaSchema,

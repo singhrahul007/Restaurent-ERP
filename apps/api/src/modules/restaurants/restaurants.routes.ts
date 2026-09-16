@@ -4,13 +4,15 @@ import type { Database } from "@niva/database";
 import {
   assignBranchBodySchema,
   createBranchBodySchema,
+  createDiningTableBodySchema,
   createRestaurantBodySchema,
   patchBranchBodySchema,
+  patchDiningTableBodySchema,
   patchRestaurantBodySchema,
 } from "@niva/validation";
 import { errorEnvelope } from "../../lib/envelope.js";
 import { isAppError } from "../../lib/errors.js";
-import { requirePermission } from "../../lib/authorize.js";
+import { requireAnyPermission, requirePermission } from "../../lib/authorize.js";
 import { createRequireAuth } from "../auth/auth.middleware.js";
 import { createAuthRepository } from "../auth/auth.repository.js";
 import { createTenancyRepository } from "../tenancy/tenancy.repository.js";
@@ -22,13 +24,13 @@ export const restaurantRoutes: FastifyPluginAsync<{
   db: Database;
   env: ApiEnv;
 }> = async (app, opts) => {
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error, _request, reply) => {
     if (isAppError(error)) {
       return reply
         .status(error.statusCode)
         .send(errorEnvelope(error.code, error.message));
     }
-    return reply.send(error);
+    throw error;
   });
 
   const authRepository = createAuthRepository(opts.db);
@@ -97,7 +99,10 @@ export const restaurantRoutes: FastifyPluginAsync<{
     "/restaurants/:id",
     {
       schema: { tags: ["tenancy"] },
-      preHandler: [...tenantAuth, requirePermission("restaurant.manage")],
+      preHandler: [
+        ...tenantAuth,
+        requireAnyPermission("restaurant.manage", "settings.manage"),
+      ],
     },
     async (request, reply) => {
       const parsed = patchRestaurantBodySchema.safeParse(request.body);
@@ -162,11 +167,7 @@ export const restaurantRoutes: FastifyPluginAsync<{
           .send(errorEnvelope("VALIDATION_ERROR", "Invalid branch payload"));
       }
       const { id } = request.params as { id: string };
-      const branch = await service.createBranch(
-        request.tenant!,
-        id,
-        parsed.data.name,
-      );
+      const branch = await service.createBranch(request.tenant!, id, parsed.data);
       return reply.status(201).send({
         success: true,
         data: branch,
@@ -207,7 +208,7 @@ export const restaurantRoutes: FastifyPluginAsync<{
       const { id } = request.params as { id: string };
       return {
         success: true,
-        data: await service.updateBranch(request.tenant!, id, parsed.data.name),
+        data: await service.updateBranch(request.tenant!, id, parsed.data),
         meta: { requestId: request.id },
       };
     },
@@ -285,6 +286,84 @@ export const restaurantRoutes: FastifyPluginAsync<{
         membershipId: string;
       };
       await service.unassignBranch(request.tenant!, id, membershipId);
+      return {
+        success: true,
+        data: { ok: true },
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  app.get(
+    "/branches/:id/tables",
+    {
+      schema: { tags: ["tenancy"] },
+      preHandler: [...tenantAuth, requirePermission("tables.view")],
+    },
+    async (request) => {
+      const { id } = request.params as { id: string };
+      return {
+        success: true,
+        data: { tables: await service.listTables(request.tenant!, id) },
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  app.post(
+    "/branches/:id/tables",
+    {
+      schema: { tags: ["tenancy"] },
+      preHandler: [...tenantAuth, requirePermission("tables.manage")],
+    },
+    async (request, reply) => {
+      const parsed = createDiningTableBodySchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .status(400)
+          .send(errorEnvelope("VALIDATION_ERROR", "Invalid table payload"));
+      }
+      const { id } = request.params as { id: string };
+      const table = await service.createTable(request.tenant!, id, parsed.data);
+      return reply.status(201).send({
+        success: true,
+        data: table,
+        meta: { requestId: request.id },
+      });
+    },
+  );
+
+  app.patch(
+    "/tables/:id",
+    {
+      schema: { tags: ["tenancy"] },
+      preHandler: [...tenantAuth, requirePermission("tables.manage")],
+    },
+    async (request, reply) => {
+      const parsed = patchDiningTableBodySchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .status(400)
+          .send(errorEnvelope("VALIDATION_ERROR", "Invalid table payload"));
+      }
+      const { id } = request.params as { id: string };
+      return {
+        success: true,
+        data: await service.updateTable(request.tenant!, id, parsed.data),
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  app.delete(
+    "/tables/:id",
+    {
+      schema: { tags: ["tenancy"] },
+      preHandler: [...tenantAuth, requirePermission("tables.manage")],
+    },
+    async (request) => {
+      const { id } = request.params as { id: string };
+      await service.removeTable(request.tenant!, id);
       return {
         success: true,
         data: { ok: true },

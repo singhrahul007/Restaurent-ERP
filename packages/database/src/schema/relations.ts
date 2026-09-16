@@ -6,7 +6,24 @@ import { organizations } from "./organizations.js";
 import { emailVerifications, otpChallenges } from "./otp.js";
 import { passwordResetTokens } from "./password-reset-tokens.js";
 import { permissions, rolePermissions, roles } from "./rbac.js";
-import { branchAssignments, branches, restaurants } from "./restaurants.js";
+import {
+  menuAvailabilityOverrides,
+  menuCategories,
+  menuItemModifierGroups,
+  menuItems,
+  menuItemVariants,
+  modifierGroups,
+  modifiers,
+  taxClasses,
+  taxRates,
+} from "./menu.js";
+import {
+  branchAssignments,
+  branches,
+  diningTables,
+  restaurantSettings,
+  restaurants,
+} from "./restaurants.js";
 import { sessions } from "./sessions.js";
 import { users } from "./users.js";
 
@@ -83,6 +100,25 @@ export const restaurantsRelations = relations(restaurants, ({ one, many }) => ({
     references: [organizations.id],
   }),
   branches: many(branches),
+  settings: one(restaurantSettings, {
+    fields: [restaurants.id],
+    references: [restaurantSettings.restaurantId],
+  }),
+  taxClasses: many(taxClasses),
+  menuCategories: many(menuCategories),
+  menuItems: many(menuItems),
+  modifierGroups: many(modifierGroups),
+}));
+
+export const restaurantSettingsRelations = relations(restaurantSettings, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [restaurantSettings.organizationId],
+    references: [organizations.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [restaurantSettings.restaurantId],
+    references: [restaurants.id],
+  }),
 }));
 
 export const branchesRelations = relations(branches, ({ one, many }) => ({
@@ -95,6 +131,19 @@ export const branchesRelations = relations(branches, ({ one, many }) => ({
     references: [restaurants.id],
   }),
   branchAssignments: many(branchAssignments),
+  diningTables: many(diningTables),
+  menuAvailabilityOverrides: many(menuAvailabilityOverrides),
+}));
+
+export const diningTablesRelations = relations(diningTables, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [diningTables.organizationId],
+    references: [organizations.id],
+  }),
+  branch: one(branches, {
+    fields: [diningTables.branchId],
+    references: [branches.id],
+  }),
 }));
 
 export const branchAssignmentsRelations = relations(branchAssignments, ({ one }) => ({
@@ -156,3 +205,142 @@ export const mfaRecoveryCodesRelations = relations(mfaRecoveryCodes, ({ one }) =
     references: [users.id],
   }),
 }));
+
+export const taxClassesRelations = relations(taxClasses, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [taxClasses.organizationId],
+    references: [organizations.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [taxClasses.restaurantId],
+    references: [restaurants.id],
+  }),
+  rates: many(taxRates),
+  menuItems: many(menuItems),
+}));
+
+export const taxRatesRelations = relations(taxRates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [taxRates.organizationId],
+    references: [organizations.id],
+  }),
+  taxClass: one(taxClasses, {
+    fields: [taxRates.taxClassId],
+    references: [taxClasses.id],
+  }),
+}));
+
+export const menuCategoriesRelations = relations(menuCategories, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [menuCategories.organizationId],
+    references: [organizations.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [menuCategories.restaurantId],
+    references: [restaurants.id],
+  }),
+  parent: one(menuCategories, {
+    fields: [menuCategories.parentId],
+    references: [menuCategories.id],
+    relationName: "menu_category_tree",
+  }),
+  children: many(menuCategories, { relationName: "menu_category_tree" }),
+  items: many(menuItems),
+}));
+
+export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [menuItems.organizationId],
+    references: [organizations.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [menuItems.restaurantId],
+    references: [restaurants.id],
+  }),
+  category: one(menuCategories, {
+    fields: [menuItems.categoryId],
+    references: [menuCategories.id],
+  }),
+  taxClass: one(taxClasses, {
+    fields: [menuItems.taxClassId],
+    references: [taxClasses.id],
+  }),
+  variants: many(menuItemVariants),
+  modifierGroups: many(menuItemModifierGroups),
+  availabilityOverrides: many(menuAvailabilityOverrides),
+}));
+
+export const menuItemVariantsRelations = relations(menuItemVariants, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [menuItemVariants.organizationId],
+    references: [organizations.id],
+  }),
+  item: one(menuItems, {
+    fields: [menuItemVariants.menuItemId],
+    references: [menuItems.id],
+  }),
+}));
+
+export const modifierGroupsRelations = relations(modifierGroups, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [modifierGroups.organizationId],
+    references: [organizations.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [modifierGroups.restaurantId],
+    references: [restaurants.id],
+  }),
+  modifiers: many(modifiers),
+  items: many(menuItemModifierGroups),
+}));
+
+export const modifiersRelations = relations(modifiers, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [modifiers.organizationId],
+    references: [organizations.id],
+  }),
+  group: one(modifierGroups, {
+    fields: [modifiers.modifierGroupId],
+    references: [modifierGroups.id],
+  }),
+}));
+
+export const menuItemModifierGroupsRelations = relations(
+  menuItemModifierGroups,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [menuItemModifierGroups.organizationId],
+      references: [organizations.id],
+    }),
+    item: one(menuItems, {
+      fields: [menuItemModifierGroups.menuItemId],
+      references: [menuItems.id],
+    }),
+    group: one(modifierGroups, {
+      fields: [menuItemModifierGroups.modifierGroupId],
+      references: [modifierGroups.id],
+    }),
+  }),
+);
+
+export const menuAvailabilityOverridesRelations = relations(
+  menuAvailabilityOverrides,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [menuAvailabilityOverrides.organizationId],
+      references: [organizations.id],
+    }),
+    restaurant: one(restaurants, {
+      fields: [menuAvailabilityOverrides.restaurantId],
+      references: [restaurants.id],
+    }),
+    item: one(menuItems, {
+      fields: [menuAvailabilityOverrides.menuItemId],
+      references: [menuItems.id],
+    }),
+    branch: one(branches, {
+      fields: [menuAvailabilityOverrides.branchId],
+      references: [branches.id],
+    }),
+  }),
+);

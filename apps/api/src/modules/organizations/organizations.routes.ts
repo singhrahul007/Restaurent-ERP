@@ -25,7 +25,7 @@ export const organizationRoutes: FastifyPluginAsync<{
         .status(error.statusCode)
         .send(errorEnvelope(error.code, error.message));
     }
-    return reply.send(error);
+    throw error;
   });
 
   const authRepository = createAuthRepository(opts.db);

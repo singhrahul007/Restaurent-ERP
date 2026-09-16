@@ -72,3 +72,34 @@ Top bar: wordmark, search (owner), notifications, profile. Left nav role-specifi
 ## States
 
 Every data view: loading skeleton, empty illustration+CTA, error+retry. POS errors must be inline and recoverable (payment fail).
+
+## Shell token overrides
+
+Set `data-shell` on `AppShell` (`owner` | `platform` | `pos` | `kds` | `driver`). Variables are defined in `packages/ui/src/styles/tokens.css` only.
+
+| Shell | Intent |
+| --- | --- |
+| `owner` | Warm canvas (default `:root`) |
+| `platform` | Cool dark command center; ember is secondary, not the page field |
+| `pos` | Neutral workspace (`--bg-pos`); motion durations shortened |
+| `kds` | Near-black, high contrast (see below) |
+| `driver` | Light, thumb-friendly; same accent as owner |
+
+### KDS high contrast
+
+- Background `#050505` / surface `#0b0b0a` with `--fg-primary` `#fafaf9` (body ≥ 20px via `--text-md: 1.25rem`).
+- Ticket titles use `--text-xl` (1.75rem, ≥ 28px).
+- Status: `--accent` amber `#f5c518`, `--success` `#4ade80`, `--danger` `#fb7185` on black for large-text contrast.
+- No drop shadows. Alerts sit at `--z-kds-alert` (80). Do not use owner dashboard chrome on KDS.
+
+## Focus and contrast notes
+
+- `:focus-visible` uses `--focus-ring` (2px solid `--accent`) and `--focus-offset`. Do not remove outlines on buttons.
+- Primary buttons are `--accent` on `--fg-inverse`. If a control sits on ember, use `--fg-inverse` text.
+- Charts use `--chart-1`…`--chart-6` (Wong-style, colorblind-safer than rainbow).
+- Feature code must not introduce hex; change tokens.css instead.
+
+## Motion
+
+`--duration-fast/med/slow` and `--easing-standard`. `prefers-reduced-motion: reduce` collapses CSS animation/transition. Framer presets (`FadeIn`, `ScaleIn`) skip decorative animation when `useReducedMotion()` is true.
+

@@ -54,11 +54,93 @@ Do not put stack traces or SQL in `message`. Use stable `code` values.
 | GET/PATCH | `/users/me` | authenticated |
 | GET | `/organizations` | membership |
 | GET/PATCH | `/organizations/:id` | `settings.manage` or owner |
-| CRUD | `/restaurants` | `restaurant.view` / `restaurant.manage` |
-| CRUD | `/restaurants/:id/branches` | `branch.view` / `branch.manage` |
-| CRUD | `/staff` | `staff.view` / `staff.manage` |
+| CRUD | `/restaurants` | `restaurant.view` / `restaurant.manage`; PATCH also `settings.manage` |
+| CRUD | `/restaurants/:id/branches` | `branch.view` / `branch.manage`; `posIdleTimeoutMinutes` |
+| CRUD | `/branches/:id/tables` | `tables.view` / `tables.manage`; unique code per branch |
+| POST | `/staff/invites` | `staff.manage`; audit `ROLE_CHANGED`; no `SUPER_ADMIN` |
+| GET/PATCH | `/staff` | `staff.view` / `staff.manage` |
 | GET/PUT | `/roles` | `settings.manage` |
 | GET | `/audit-logs` | `settings.manage` or `platform.manage` |
+
+## Menu (Phase 5)
+
+Money fields are integers (`basePriceMinor`, `priceDeltaMinor`). Tax rates are integer basis points (`1800` = 18%). Permissions: `menu.view` / `menu.manage`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/restaurants/:restaurantId/menu` | Categories, items (with `effectiveAvailable`), tax classes, modifier groups. Query `branchId` applies 86 overlay. |
+| GET/POST | `/restaurants/:restaurantId/tax-classes` | Create includes first rate (`rateBps`, optional `cgstBps`/`sgstBps`/`igstBps`, `inclusive`) |
+| PATCH/DELETE | `/tax-classes/:id` | |
+| POST | `/tax-classes/:id/rates` | Closes the current rate |
+| GET/POST | `/restaurants/:restaurantId/menu/categories` | Optional `parentId` tree |
+| PATCH/DELETE | `/menu/categories/:id` | |
+| GET/POST | `/restaurants/:restaurantId/menu/items` | `basePriceMinor` integer; GET query `branchId` |
+| GET/PATCH/DELETE | `/menu/items/:id` | Variants, attached groups, availability overlays |
+| POST | `/menu/items/:id/variants` | `priceDeltaMinor` integer |
+| PATCH/DELETE | `/menu/variants/:id` | |
+| GET/POST | `/restaurants/:restaurantId/menu/modifier-groups` | `minSelect` ≤ `maxSelect` |
+| PATCH/DELETE | `/menu/modifier-groups/:id` | |
+| POST | `/menu/modifier-groups/:id/modifiers` | `priceDeltaMinor` integer |
+| PATCH/DELETE | `/menu/modifiers/:id` | |
+| PUT | `/menu/items/:id/modifier-groups` | Replace attachments `{ modifierGroupIds }` |
+| PUT/DELETE | `/menu/items/:id/availability` | 86 overlay; `branchId` null = restaurant-wide |
+
+## Orders and POS (Phase 6)
+
+Money is integer minor units. Totals come only from `priceOrder` in `apps/api/src/modules/pricing/pricing.service.ts`. Permissions: `orders.*`, `payments.create`, `payments.refund`.
+
+**Occupied table:** a dine-in table is occupied while any order on that table is not `COMPLETED` or `CANCELLED`. Creating another dine-in order for it returns `409 CONFLICT`.
+
+**Coupon redemption:** one coupon per order; one `coupon_redemptions` row per `(coupon_id, order_id)`; `max_redemptions` caps uses of a code across orders (`null` = unlimited).
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/branches/:branchId/orders` | `Idempotency-Key` header; `DINE_IN` requires `tableId`; status `DRAFT` or `CREATED` |
+| GET | `/branches/:branchId/orders` | |
+| GET | `/orders/:id` | Includes items, payments, `balanceMinor` |
+| POST | `/orders/:id/items` | Mutate `DRAFT`/`CREATED` only; recalc in tx |
+| PATCH/DELETE | `/order-items/:id` | Qty or remove |
+| POST | `/orders/:id/discounts` | `PERCENT` (`percentBps`) or `AMOUNT`; cannot go negative |
+| POST | `/restaurants/:restaurantId/coupons` | Create code |
+| POST | `/orders/:id/coupon` | Apply code |
+| POST | `/orders/:id/payments` | Cash; **does not** change order status |
+| POST | `/orders/:id/confirm` | `CREATED` → `CONFIRMED` → `PREPARING`; kitchen tickets + outbox in the same tx |
+| POST | `/orders/:id/ready` `/serve` `/hand-over` `/complete` | State machine; complete requires balance 0 |
+| POST | `/orders/:id/cancel` | Not `COMPLETED`; refund captured payments first |
+| POST | `/payments/:id/refunds` | `payments.refund`; amount ≤ captured |
+
+## Kitchen (Phase 7)
+
+Permissions: `kitchen.view`, `kitchen.update`. JSON omits prices and payments. Socket events go only to `kitchen:{branchId}`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/branches/:branchId/kitchen/tickets` | Columns `NEW`, `IN_PROGRESS`, `READY` |
+| PATCH | `/kitchen/ticket-items/:id` | `{ status }` |
+| POST | `/kitchen/tickets/:id/ready` | All items ready; order `PREPARING` → `READY` |
+
+Restaurant setting `kitchenSoundEnabled` plus KDS mute.
+
+## Inventory (Phase 8)
+
+Permissions: `inventory.view`, `inventory.manage`. Quantities are integers in the item base unit. Conversions use integer ratios only (`qty * numerator / denominator` with remainder 0). Balance rows change only inside the same database transaction as an `inventory_transactions` row.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET/POST | `/restaurants/:restaurantId/units` | Seeds g/kg, ml/l, each on first GET |
+| POST | `/restaurants/:restaurantId/unit-conversions` | `{ fromUnitId, toUnitId, numerator, denominator }` |
+| GET/POST | `/restaurants/:restaurantId/inventory/items` | Optional `?branchId=` for on-hand qty |
+| GET | `/branches/:branchId/inventory/items` | Balances in base units |
+| PATCH | `/inventory/items/:id` | Name, trackStock, threshold |
+| GET/POST | `/branches/:branchId/inventory/transactions` | `ADJUSTMENT`/`WASTAGE`; audit `INVENTORY_ADJUSTED`; `Idempotency-Key` |
+| GET | `/restaurants/:restaurantId/inventory/alerts` | Qty ≤ threshold |
+| POST | `/restaurants/:restaurantId/inventory/transfers` | `TRANSFER_OUT`/`IN` pair, same restaurant |
+| GET/POST | `/restaurants/:restaurantId/suppliers` | Org scoped |
+| PATCH/DELETE | `/suppliers/:id` | |
+| POST | `/branches/:branchId/purchase-orders` | Draft + lines |
+| POST | `/purchase-orders/:id/receive` | `PURCHASE` movements + status `RECEIVED` in one tx |
+
+Outbox topic `inventory.low_stock` when a movement crosses the threshold from above.
 
 ## Operations (later phases)
 
@@ -68,12 +150,10 @@ Illustrative (not implemented until their phase):
 
 | Resource | Examples |
 | --- | --- |
-| Tables | `/branches/:branchId/tables` |
-| Menu | `/restaurants/:id/menu/categories`, `.../items` |
 | Orders | `/branches/:branchId/orders` |
 | Payments | `/orders/:id/payments`, `/payments/:id/refunds` |
-| Kitchen | `/branches/:branchId/kitchen/tickets` |
-| Inventory | `/branches/:branchId/inventory/items`, `.../transactions` |
+| Kitchen | `/branches/:branchId/kitchen/tickets` (implemented) |
+| Inventory | `/branches/:branchId/inventory/items`, `.../transactions` (implemented) |
 | Recipes | `/restaurants/:id/recipes` |
 | Delivery | `/deliveries`, `/delivery/me/shift` |
 | Reports | `/reports/sales` (async job + download) |
