@@ -46,6 +46,7 @@ export default function RestaurantSetupPage() {
   const [error, setError] = useState("Could not load restaurant");
   const [createName, setCreateName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -152,6 +153,7 @@ export default function RestaurantSetupPage() {
       toast.error("Select a restaurant first.");
       return;
     }
+    setSaveMessage(null);
     try {
       await api(`/restaurants/${id}`, {
         method: "PATCH",
@@ -164,6 +166,7 @@ export default function RestaurantSetupPage() {
         }),
       });
       form.reset(values);
+      setSaveMessage("Saved");
       toast.success("Restaurant saved");
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "Could not save restaurant");
@@ -246,9 +249,16 @@ export default function RestaurantSetupPage() {
             />
             Prices include tax
           </label>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving…" : "Save"}
+            </Button>
+            {saveMessage ? (
+              <p className="text-sm text-fg-muted" role="status">
+                {saveMessage}
+              </p>
+            ) : null}
+          </div>
         </form>
       </Card>
     </>
