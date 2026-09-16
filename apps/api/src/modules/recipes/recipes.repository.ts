@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   inventoryConsumptions,
   inventoryItems,
@@ -99,6 +99,17 @@ export async function consumeOrderInTx(
     return { status: "skipped" };
   }
 
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${input.orderId}))`);
+
+  const [existing] = await tx
+    .select({ id: inventoryConsumptions.id })
+    .from(inventoryConsumptions)
+    .where(eq(inventoryConsumptions.orderId, input.orderId))
+    .limit(1);
+  if (existing) {
+    return { status: "already" };
+  }
+
   try {
     await tx.insert(inventoryConsumptions).values({
       organizationId: input.organizationId,
@@ -182,6 +193,8 @@ export async function reverseOrderInTx(
     actorId: string;
   },
 ): Promise<{ status: "skipped" | "reversed" | "already"; error?: MovementError }> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${input.orderId}))`);
+
   const [consumption] = await tx
     .select({
       id: inventoryConsumptions.id,
