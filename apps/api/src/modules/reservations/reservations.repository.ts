@@ -122,3 +122,4 @@ export function createReservationRepository(db: Database) {
 }
 
 export type ReservationRepository = ReturnType<typeof createReservationRepository>;
+

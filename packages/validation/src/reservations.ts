@@ -21,3 +21,4 @@ export const patchReservationBodySchema = z.object({
 });
 
 export type PatchReservationBody = z.infer<typeof patchReservationBodySchema>;
+

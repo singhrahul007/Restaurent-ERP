@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { AppFrame, AppShell, Sidebar, SidebarItem, Topbar } from "@niva/ui";
+import { UserMenu, SidebarUserFooter } from "../../components/user-menu";
 import { SessionGate } from "../../lib/session-gate";
 
 export default function SetupLayout({ children }: { children: ReactNode }) {
@@ -26,11 +27,12 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
                   <span className="font-display text-base font-bold tracking-tight">MR.Genious</span>
                 </Link>
               }
-              start={<span className="text-sm text-fg-muted">Setup</span>}
+              start={<span className="text-sm font-medium text-fg-muted">Setup & Settings</span>}
+              end={<UserMenu />}
             />
           }
           sidebar={
-            <Sidebar>
+            <Sidebar footer={<SidebarUserFooter />}>
               <SidebarItem href="/dashboard" active={pathname === "/dashboard"}>
                 Dashboard
               </SidebarItem>

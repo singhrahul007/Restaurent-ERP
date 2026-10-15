@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { SessionGate } from "../../lib/session-gate";
 import { getCachedMe } from "../../lib/session";
+import { UserMenu, SidebarUserFooter } from "../../components/user-menu";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <UtensilsCrossed className="size-3.5" />
                     Open POS
                   </Link>
+                  <UserMenu />
                 </div>
               }
             />
@@ -66,9 +68,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           sidebar={
             <Sidebar
               footer={
-                <div className="flex items-center justify-between text-xs text-fg-muted">
-                  <span>v2.4.0 High-Volume</span>
-                  <span className="flex size-2 rounded-full bg-emerald-400" />
+                <div className="space-y-2">
+                  <SidebarUserFooter />
+                  <div className="flex items-center justify-between text-[11px] text-fg-muted px-1">
+                    <span>v2.4.0 High-Volume</span>
+                    <span className="flex size-2 rounded-full bg-emerald-400" />
+                  </div>
                 </div>
               }
             >

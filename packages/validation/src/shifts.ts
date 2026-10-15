@@ -15,3 +15,4 @@ export const closeShiftBodySchema = z.object({
 });
 
 export type CloseShiftBody = z.infer<typeof closeShiftBodySchema>;
+

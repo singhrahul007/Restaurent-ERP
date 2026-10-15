@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { AppFrame, AppShell, Sidebar, SidebarItem, Topbar } from "@niva/ui";
+import { UserMenu, SidebarUserFooter } from "../../components/user-menu";
 import { SessionGate } from "../../lib/session-gate";
 
 export default function OpsLayout({ children }: { children: ReactNode }) {
@@ -27,10 +28,11 @@ export default function OpsLayout({ children }: { children: ReactNode }) {
                 </Link>
               }
               start={<span className="text-sm text-fg-muted">Floor ops</span>}
+              end={<UserMenu />}
             />
           }
           sidebar={
-            <Sidebar>
+            <Sidebar footer={<SidebarUserFooter />}>
               <SidebarItem href="/ops" active={pathname === "/ops"}>
                 Live board
               </SidebarItem>

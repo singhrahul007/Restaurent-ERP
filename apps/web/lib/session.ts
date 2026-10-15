@@ -59,3 +59,19 @@ export function loadSession(): Promise<Me> {
 export function isUnauthorized(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
 }
+
+export async function logout(): Promise<void> {
+  try {
+    await api("/auth/logout", { method: "POST" });
+  } catch {
+    // Ignore network failure so local session is always reset
+  }
+  clearCachedSession();
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem("niva_organization_id");
+    window.localStorage.removeItem("niva_restaurant_id");
+    window.localStorage.removeItem("niva_branch_id");
+    window.location.href = "/login";
+  }
+}
+
