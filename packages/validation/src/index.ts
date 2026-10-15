@@ -134,4 +134,16 @@ export {
   type IngestPartnerOrderBody,
   type UpsertIntegrationAccountBody,
 } from "./integrations.js";
+export {
+  closeShiftBodySchema,
+  openShiftBodySchema,
+  type CloseShiftBody,
+  type OpenShiftBody,
+} from "./shifts.js";
+export {
+  createReservationBodySchema,
+  patchReservationBodySchema,
+  type CreateReservationBody,
+  type PatchReservationBody,
+} from "./reservations.js";
 

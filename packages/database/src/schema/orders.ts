@@ -48,6 +48,7 @@ export const orders = pgTable(
       .notNull()
       .references(() => branches.id, { onDelete: "restrict" }),
     tableId: uuid("table_id").references(() => diningTables.id, { onDelete: "restrict" }),
+    tokenNumber: integer("token_number"),
     type: orderType("type").notNull(),
     source: varchar("source", { length: 64 }).notNull().default("pos"),
     sourceExternalId: varchar("source_external_id", { length: 128 }),

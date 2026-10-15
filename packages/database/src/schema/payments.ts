@@ -72,3 +72,35 @@ export const refunds = pgTable(
     index("refunds_payment_id_idx").on(table.paymentId),
   ],
 );
+
+export const shiftStatus = pgEnum("shift_status", ["OPEN", "CLOSED"]);
+
+export const posShifts = pgTable(
+  "pos_shifts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "restrict" }),
+    branchId: uuid("branch_id").notNull(),
+    cashierId: uuid("cashier_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    status: shiftStatus("status").notNull().default("OPEN"),
+    openingFloatMinor: bigint("opening_float_minor", { mode: "number" }).notNull().default(0),
+    expectedCashMinor: bigint("expected_cash_minor", { mode: "number" }).notNull().default(0),
+    actualCashMinor: bigint("actual_cash_minor", { mode: "number" }),
+    cashDiscrepancyMinor: bigint("cash_discrepancy_minor", { mode: "number" }).notNull().default(0),
+    cashSalesMinor: bigint("cash_sales_minor", { mode: "number" }).notNull().default(0),
+    cardSalesMinor: bigint("card_sales_minor", { mode: "number" }).notNull().default(0),
+    upiSalesMinor: bigint("upi_sales_minor", { mode: "number" }).notNull().default(0),
+    denominationCountsJson: varchar("denomination_counts_json", { length: 2000 }),
+    notes: varchar("notes", { length: 500 }),
+    openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("pos_shifts_organization_id_branch_id_idx").on(table.organizationId, table.branchId),
+    index("pos_shifts_cashier_id_status_idx").on(table.cashierId, table.status),
+  ],
+);

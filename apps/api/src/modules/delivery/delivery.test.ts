@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { parseApiEnv } from "@niva/config";
-import { createDatabase, users } from "@niva/database";
+import { createDatabase, deliveries, deliveryAgents, users } from "@niva/database";
 import { afterAll, describe, expect, it } from "vitest";
 import { buildApp } from "../../app.js";
 import { ACCESS_COOKIE } from "../auth/auth.cookies.js";
@@ -27,6 +27,18 @@ describe.skipIf(!hasDatabase)("delivery", () => {
   const password = "longenough1";
 
   afterAll(async () => {
+    const agentUser = await db.query.users.findFirst({
+      where: eq(users.email, agentEmail),
+    });
+    if (agentUser) {
+      const agent = await db.query.deliveryAgents.findFirst({
+        where: eq(deliveryAgents.userId, agentUser.id),
+      });
+      if (agent) {
+        await db.delete(deliveries).where(eq(deliveries.agentId, agent.id));
+      }
+      await db.delete(deliveryAgents).where(eq(deliveryAgents.userId, agentUser.id));
+    }
     await db.delete(users).where(eq(users.email, ownerEmail));
     await db.delete(users).where(eq(users.email, agentEmail));
     await db.delete(users).where(eq(users.email, otherEmail));

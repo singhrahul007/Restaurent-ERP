@@ -61,8 +61,10 @@ export {
   diningTableStatus,
   diningTables,
   inventoryPolicy,
+  reservationStatus,
   restaurantSettings,
   restaurants,
+  tableReservations,
 } from "./schema/restaurants.js";
 export {
   kitchenTicketItemStatus,
@@ -87,7 +89,9 @@ export {
   paymentMethod,
   paymentStatus,
   payments,
+  posShifts,
   refunds,
+  shiftStatus,
 } from "./schema/payments.js";
 export {
   inventoryBalances,

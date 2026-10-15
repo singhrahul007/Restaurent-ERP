@@ -31,6 +31,16 @@ import { expenseRoutes } from "./modules/expenses/expenses.routes.js";
 import { reportRoutes } from "./modules/reports/reports.routes.js";
 import { integrationRoutes } from "./modules/integrations/integrations.routes.js";
 import { staffRoutes } from "./modules/staff/staff.routes.js";
+import { createShiftRoutes } from "./modules/shifts/shifts.routes.js";
+import { createShiftService } from "./modules/shifts/shifts.service.js";
+import { createShiftRepository } from "./modules/shifts/shifts.repository.js";
+import { createReservationRoutes } from "./modules/reservations/reservations.routes.js";
+import { createReservationService } from "./modules/reservations/reservations.service.js";
+import { createReservationRepository } from "./modules/reservations/reservations.repository.js";
+import { createRequireAuth } from "./modules/auth/auth.middleware.js";
+import { createAuthRepository } from "./modules/auth/auth.repository.js";
+import { createTenancyRepository } from "./modules/tenancy/tenancy.repository.js";
+import { createRequireTenant } from "./lib/tenant-context.js";
 
 export { errorEnvelope } from "./lib/envelope.js";
 
@@ -223,6 +233,26 @@ export async function buildApp(options: BuildAppOptions) {
     db: options.db,
     env: options.env,
   });
+
+  const tenancy = createTenancyRepository(options.db);
+  const authRepository = createAuthRepository(options.db);
+  const requireAuth = createRequireAuth(options.env, authRepository, tenancy);
+  const requireTenant = createRequireTenant(options.env, tenancy);
+
+  const shiftService = createShiftService(createShiftRepository(options.db));
+  await app.register(async (scope) => {
+    scope.addHook("preHandler", requireAuth);
+    scope.addHook("preHandler", requireTenant);
+    await scope.register(createShiftRoutes(shiftService));
+  }, { prefix: "/api/v1/shifts" });
+
+  const reservationService = createReservationService(createReservationRepository(options.db));
+  await app.register(async (scope) => {
+    scope.addHook("preHandler", requireAuth);
+    scope.addHook("preHandler", requireTenant);
+    await scope.register(createReservationRoutes(reservationService));
+  }, { prefix: "/api/v1/reservations" });
+
   await app.register(platformRoutes, {
     prefix: "/api/v1/platform",
     db: options.db,

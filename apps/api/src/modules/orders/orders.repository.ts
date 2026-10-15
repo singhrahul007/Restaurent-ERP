@@ -30,6 +30,7 @@ const orderSelect = {
   restaurantId: orders.restaurantId,
   branchId: orders.branchId,
   tableId: orders.tableId,
+  tokenNumber: orders.tokenNumber,
   type: orders.type,
   source: orders.source,
   sourceExternalId: orders.sourceExternalId,
@@ -356,10 +357,26 @@ export function createOrderRepository(db: Database) {
       idempotencyKey: string | null;
       notes?: string;
       createdBy: string;
+      tokenNumber?: number | null;
       totals: OrderTotals;
       items: NewOrderItemRow[];
     }) {
       return withOrganizationScope(db, input.organizationId, async (tx) => {
+        let assignedToken = input.tokenNumber;
+        if (!assignedToken) {
+          const [maxToken] = await tx
+            .select({ max: sql<number>`coalesce(max(${orders.tokenNumber}), 0)` })
+            .from(orders)
+            .where(
+              and(
+                eq(orders.organizationId, input.organizationId),
+                eq(orders.branchId, input.branchId),
+                sql`${orders.createdAt} >= date_trunc('day', now())`,
+              ),
+            );
+          assignedToken = ((maxToken?.max ?? 0) % 999) + 1;
+        }
+
         const [order] = await tx
           .insert(orders)
           .values({
@@ -367,6 +384,7 @@ export function createOrderRepository(db: Database) {
             restaurantId: input.restaurantId,
             branchId: input.branchId,
             tableId: input.tableId,
+            tokenNumber: assignedToken,
             type: input.type,
             source: input.source ?? "pos",
             sourceExternalId: input.sourceExternalId,

@@ -419,4 +419,48 @@ export const orderRoutes: FastifyPluginAsync<{
       };
     },
   );
+
+  app.get(
+    "/branches/:branchId/tokens",
+    {
+      schema: { tags: ["orders", "tms"] },
+    },
+    async (request) => {
+      const { branchId } = request.params as { branchId: string };
+      const allOrders = await (opts.db as any).query.orders.findMany({
+        where: (order: any, { and, eq, inArray }: any) =>
+          and(
+            eq(order.branchId, branchId),
+            inArray(order.status, ["CONFIRMED", "PREPARING", "READY"]),
+          ),
+        columns: {
+          id: true,
+          tokenNumber: true,
+          status: true,
+          type: true,
+          createdAt: true,
+        },
+        orderBy: (order: any, { desc }: any) => [desc(order.createdAt)],
+      });
+
+      const preparing = allOrders
+        .filter((o: any) => o.status === "CONFIRMED" || o.status === "PREPARING")
+        .map((o: any) => o.tokenNumber)
+        .filter(Boolean);
+
+      const ready = allOrders
+        .filter((o: any) => o.status === "READY")
+        .map((o: any) => o.tokenNumber)
+        .filter(Boolean);
+
+      return {
+        success: true,
+        data: {
+          preparing,
+          ready,
+        },
+        meta: { requestId: request.id },
+      };
+    },
+  );
 };

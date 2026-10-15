@@ -158,3 +158,44 @@ export const diningTables = pgTable(
     index("dining_tables_branch_id_idx").on(table.branchId),
   ],
 );
+
+export const reservationStatus = pgEnum("reservation_status", [
+  "CONFIRMED",
+  "WAITLISTED",
+  "SEATED",
+  "CANCELLED",
+  "NO_SHOW",
+]);
+
+export const tableReservations = pgTable(
+  "table_reservations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "restrict" }),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id, { onDelete: "cascade" }),
+    guestName: varchar("guest_name", { length: 128 }).notNull(),
+    guestPhone: varchar("guest_phone", { length: 32 }).notNull(),
+    partySize: integer("party_size").notNull().default(2),
+    reservationTime: timestamp("reservation_time", { withTimezone: true }).notNull(),
+    tableId: uuid("table_id").references(() => diningTables.id, { onDelete: "set null" }),
+    status: reservationStatus("status").notNull().default("CONFIRMED"),
+    specialRequests: varchar("special_requests", { length: 500 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("table_reservations_org_branch_time_idx").on(
+      table.organizationId,
+      table.branchId,
+      table.reservationTime,
+    ),
+    index("table_reservations_guest_phone_idx").on(table.organizationId, table.guestPhone),
+  ],
+);

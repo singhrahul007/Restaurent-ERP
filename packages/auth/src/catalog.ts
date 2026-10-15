@@ -32,6 +32,12 @@ export const PERMISSION_CODES = [
   "delivery.self",
   "tables.view",
   "tables.manage",
+  "reservations.view",
+  "reservations.manage",
+  "shifts.view",
+  "shifts.manage",
+  "tms.view",
+  "tms.manage",
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
@@ -44,6 +50,7 @@ export const SYSTEM_ROLE_SLUGS = [
   "RESTAURANT_MANAGER",
   "RECEPTIONIST",
   "CASHIER",
+  "WAITER",
   "COOK",
   "DELIVERY_AGENT",
 ] as const;
@@ -130,8 +137,20 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<
     "payments.create",
     "customers.view",
     "tables.view",
+    "shifts.view",
+    "shifts.manage",
+    "tms.view",
+    "tms.manage",
   ],
-  COOK: ["kitchen.view", "kitchen.update", "orders.view"],
+  WAITER: [
+    "menu.view",
+    "orders.view",
+    "orders.create",
+    "orders.update",
+    "tables.view",
+    "reservations.view",
+  ],
+  COOK: ["kitchen.view", "kitchen.update", "orders.view", "tms.view", "tms.manage"],
   DELIVERY_AGENT: ["delivery.self", "orders.view"],
 };
 

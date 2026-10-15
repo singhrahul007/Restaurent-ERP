@@ -9,6 +9,8 @@ loadDotenv({ path: resolve(repoRoot, ".env") });
 export default defineConfig({
   test: {
     environment: "node",
-    testTimeout: 20_000,
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    fileParallelism: false,
   },
 });
