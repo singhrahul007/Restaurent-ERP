@@ -307,8 +307,38 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-border/60 bg-surface/40 py-8 text-center text-xs text-fg-muted">
-        <p>© 2026 MR.Genious Restaurant ERP System. Designed for high-volume modern dining establishments.</p>
+      <footer className="mt-20 border-t border-border/60 bg-surface/40 py-10 text-xs text-fg-muted">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <Link href="/" className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="MR.Genious" className="h-6 w-auto object-contain opacity-80" />
+                <span className="font-display font-semibold text-fg-secondary">MR.Genious</span>
+              </Link>
+              <span className="hidden sm:inline text-fg-muted/60">•</span>
+              <p>© {new Date().getFullYear()} MR.Genious Restaurant ERP System. All rights reserved.</p>
+            </div>
+
+            <nav className="flex flex-wrap items-center justify-center gap-6 text-xs">
+              <Link href="/terms" className="hover:text-accent transition-colors">
+                Terms & Conditions
+              </Link>
+              <Link href="/privacy" className="hover:text-accent transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/refund-policy" className="hover:text-accent transition-colors">
+                Return & Refund
+              </Link>
+              <Link href="/security" className="hover:text-accent transition-colors">
+                Security & Compliance
+              </Link>
+              <Link href="/faqs" className="hover:text-accent transition-colors">
+                FAQs
+              </Link>
+            </nav>
+          </div>
+        </div>
       </footer>
     </div>
   );

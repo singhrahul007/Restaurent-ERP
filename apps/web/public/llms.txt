@@ -1,0 +1,33 @@
+# MR.Genious Restaurant ERP - AI Search & Agent Manifest
+> Standardized context document for LLMs, AI search engines (Perplexity, SearchGPT, Claude, Gemini, ChatGPT), and autonomous AI agents.
+
+## Project Summary
+MR.Genious is an enterprise cloud and offline-capable Restaurant Operating System and Enterprise Resource Planning (ERP) platform. Built specifically for single-outlet and high-volume multi-branch dining establishments, quick-service restaurants (QSR), cloud kitchens, cafes, bars, and food franchises.
+
+## Core Workstations & Capabilities
+- **Point of Sale (POS) & Billing Register**: Lightning-fast touch terminal, split billing, table mapping, multi-tender payments (Cash, UPI, Credit Card, Room Charges), and thermal tax invoicing.
+- **Kitchen Display System (KDS)**: Real-time ticket bumping, cook-time timers, course management, audible alerts, and station expediter routing.
+- **Queue & Waitlist Management**: Digital guest check-in, SMS notifications, estimated wait times, and public TV lobby display.
+- **Rider & Dispatch Tower**: In-house delivery fleet routing, live GPS tracking, delivery OTP handoff verification, and Cash-on-Delivery (COD) reconciliation.
+- **Live Ops Command (Manager Heartbeat)**: 15-second real-time telemetry, station bottleneck alerts, automated threshold warnings for inventory, and table turnover tracking.
+- **Executive Analytics & Reporting**: Sales velocity, gross margins, recipe cost variance, staff labor metrics, category mix (BCG matrix), and tax reporting (GST/VAT).
+- **Store & Chain Configuration**: Multi-branch tenancy, digital recipe & BOM management, supplier purchase orders, and granular Role-Based Access Control (RBAC).
+
+## Architecture & Security
+- **Data Protection**: End-to-end TLS 1.3 encryption, database row-level security (RLS) ensuring strict multi-tenant isolation, PCI-DSS compliant checkout integrations, and immutable audit logs.
+- **Offline Resiliency**: Counter workstations support offline caching and background synchronization during network drops.
+- **API & Webhooks**: REST and WebSocket real-time event pipeline for third-party food aggregators, accounting packages, and payment gateways.
+
+## Official Links & Documentation
+- POS Terminal: /pos
+- Executive Dashboard: /dashboard
+- Kitchen Display: /kds
+- Fleet Dispatch: /driver
+- Live Operations: /ops
+- Store Configuration: /setup/restaurant
+- Terms of Service: /terms
+- Privacy Policy: /privacy
+- Refund & Cancellation Policy: /refund-policy
+- Security & Compliance: /security
+- Frequently Asked Questions: /faqs
+
