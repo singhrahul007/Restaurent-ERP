@@ -3,30 +3,153 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
-import { AppFrame, AppShell, Sidebar, SidebarItem, Topbar } from "@niva/ui";
+import { AppFrame, AppShell, Badge, Sidebar, SidebarItem, Topbar } from "@niva/ui";
+import {
+  Bike,
+  Flame,
+  LayoutDashboard,
+  Settings,
+  ShieldCheck,
+  Users,
+  UtensilsCrossed,
+  Zap,
+} from "lucide-react";
 import { SessionGate } from "../../lib/session-gate";
+import { getCachedMe } from "../../lib/session";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const me = getCachedMe();
+  const isAdmin = me?.user?.isPlatformAdmin || me?.memberships?.some(m => m.roles.includes("SUPER_ADMIN"));
 
   return (
     <SessionGate>
       <AppShell shell="owner">
         <AppFrame
           topbar={
-            <Topbar brand="Niva" start={<span className="text-sm text-fg-muted">Owner</span>} />
+            <Topbar
+              brand={
+                <Link href="/" className="flex items-center gap-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/logo.png"
+                    alt="MR.Genious"
+                    className="h-8 w-auto max-w-[120px] object-contain"
+                  />
+                  <span className="font-display text-base font-bold tracking-tight">MR.Genious</span>
+                </Link>
+              }
+              start={
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-fg-muted font-medium">Branch:</span>
+                  <span className="rounded-md border border-border bg-elevated px-2 py-0.5 text-xs font-semibold text-fg-primary">
+                    Main Kitchen & Dine-In
+                  </span>
+                </div>
+              }
+              end={
+                <div className="flex items-center gap-3">
+                  <Badge variant="success" dot pulse size="sm">
+                    Live
+                  </Badge>
+                  <Link
+                    href="/pos"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-accent-hover transition-colors"
+                  >
+                    <UtensilsCrossed className="size-3.5" />
+                    Open POS
+                  </Link>
+                </div>
+              }
+            />
           }
           sidebar={
-            <Sidebar>
-              <SidebarItem href="/dashboard" active={pathname === "/dashboard"}>
-                Overview
+            <Sidebar
+              footer={
+                <div className="flex items-center justify-between text-xs text-fg-muted">
+                  <span>v2.4.0 High-Volume</span>
+                  <span className="flex size-2 rounded-full bg-emerald-400" />
+                </div>
+              }
+            >
+              <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+                Intelligence
+              </div>
+              <SidebarItem
+                href="/dashboard"
+                active={pathname === "/dashboard"}
+                icon={<LayoutDashboard className="size-4" />}
+              >
+                Analytics & P&L
               </SidebarItem>
-              <SidebarItem href="/setup/restaurant" active={pathname.startsWith("/setup")}>
-                Setup
+              <SidebarItem
+                href="/ops"
+                active={pathname === "/ops"}
+                icon={<Zap className="size-4" />}
+                badge={<Badge variant="primary" size="sm">Live</Badge>}
+              >
+                Manager Ops
               </SidebarItem>
-              <SidebarItem href="/ops" active={pathname === "/ops"}>
-                Manager ops
+
+              <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+                Operations
+              </div>
+              <SidebarItem
+                href="/pos"
+                active={pathname === "/pos"}
+                icon={<UtensilsCrossed className="size-4" />}
+              >
+                POS Register
               </SidebarItem>
+              <SidebarItem
+                href="/queue"
+                active={pathname === "/queue"}
+                icon={<Users className="size-4" />}
+                badge={<Badge variant="purple" size="sm">Tokens</Badge>}
+              >
+                Queue & Waitlist
+              </SidebarItem>
+              <SidebarItem
+                href="/kds"
+                active={pathname === "/kds"}
+                icon={<Flame className="size-4" />}
+              >
+                Kitchen KDS
+              </SidebarItem>
+              <SidebarItem
+                href="/driver"
+                active={pathname.startsWith("/driver")}
+                icon={<Bike className="size-4" />}
+              >
+                Rider Fleet
+              </SidebarItem>
+
+              <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+                Configuration
+              </div>
+              <SidebarItem
+                href="/setup/restaurant"
+                active={pathname.startsWith("/setup")}
+                icon={<Settings className="size-4" />}
+              >
+                Store Setup
+              </SidebarItem>
+
+              {isAdmin && (
+                <>
+                  <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-amber-500/90 flex items-center gap-1.5">
+                    <span>Admin Control</span>
+                    <Badge variant="purple" size="sm">Root</Badge>
+                  </div>
+                  <SidebarItem
+                    href="/dashboard/access-control"
+                    active={pathname.startsWith("/dashboard/access-control")}
+                    icon={<ShieldCheck className="size-4 text-amber-500" />}
+                  >
+                    Access & Roles Studio
+                  </SidebarItem>
+                </>
+              )}
             </Sidebar>
           }
         >

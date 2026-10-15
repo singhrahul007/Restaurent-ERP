@@ -94,9 +94,74 @@ export default function LoginPage() {
           <CardTitle>{mode === "register" ? "Create account" : "Sign in"}</CardTitle>
         </CardHeader>
         <p className="mb-4 text-sm text-fg-muted">
-          There is no default username. Create an account, then use that email and password.
-          Password must be at least 8 characters.
+          Select a default demo account below or enter your credentials. All default accounts have full access.
         </p>
+
+        {/* Default Demo Accounts Section */}
+        <div className="mb-5 rounded-lg border border-border bg-subtle/50 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">
+              Default Credentials (Full Access)
+            </span>
+            <span className="text-[10px] text-accent font-medium">Click to fill</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              {
+                role: "Admin",
+                email: "admin@restaurant.com",
+                pass: "admin123",
+                badge: "Platform Admin",
+              },
+              {
+                role: "Owner",
+                email: "owner@restaurant.com",
+                pass: "owner123",
+                badge: "Restaurant Owner",
+              },
+              {
+                role: "Cook",
+                email: "cook@restaurant.com",
+                pass: "cook123",
+                badge: "Kitchen Lead",
+              },
+              {
+                role: "Waiter",
+                email: "waiter@restaurant.com",
+                pass: "waiter123",
+                badge: "Front-of-House",
+              },
+            ].map((account) => (
+              <button
+                key={account.role}
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setEmail(account.email);
+                  setPassword(account.pass);
+                  setError(null);
+                }}
+                className="group flex flex-col items-start rounded-md border border-border/80 bg-surface p-2 text-left transition hover:border-accent hover:bg-elevated focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs font-bold text-fg-primary group-hover:text-accent">
+                    {account.role}
+                  </span>
+                  <span className="text-[9px] rounded bg-muted/60 px-1 py-0.5 text-fg-muted">
+                    {account.badge}
+                  </span>
+                </div>
+                <span className="mt-1 font-mono text-[11px] text-fg-secondary">
+                  {account.email}
+                </span>
+                <span className="font-mono text-[10px] text-fg-muted">
+                  pw: {account.pass}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form className="flex flex-col gap-4" onSubmit={onSubmit}>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>

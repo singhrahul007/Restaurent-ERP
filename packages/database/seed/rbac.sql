@@ -1,10 +1,13 @@
 -- Idempotent RBAC seed. Keep codes aligned with packages/auth/src/catalog.ts
 INSERT INTO "permissions" ("code") VALUES
   ('platform.manage'),
+  ('roles.view'),
+  ('roles.manage'),
   ('restaurant.view'),
   ('restaurant.manage'),
   ('branch.view'),
   ('branch.manage'),
+  ('branch.assign'),
   ('staff.view'),
   ('staff.manage'),
   ('menu.view'),
@@ -34,6 +37,8 @@ ON CONFLICT ("code") DO NOTHING;
 
 INSERT INTO "roles" ("slug", "name", "is_system") VALUES
   ('SUPER_ADMIN', 'Super Admin', true),
+  ('RESTAURANT_ADMIN', 'Restaurant Admin', true),
+  ('RESTAURANT_SINGLE', 'Single Restaurant Operator', true),
   ('RESTAURANT_OWNER', 'Restaurant Owner', true),
   ('RESTAURANT_MANAGER', 'Restaurant Manager', true),
   ('RECEPTIONIST', 'Receptionist', true),

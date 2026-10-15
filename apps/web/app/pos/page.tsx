@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AppShell,
+  Badge,
   Button,
   EmptyState,
   ErrorState,
@@ -11,7 +13,19 @@ import {
   Select,
   Skeleton,
 } from "@niva/ui";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Minus,
+  Plus,
+  Printer,
+  Search,
+  ShoppingBag,
+  Trash2,
+  UtensilsCrossed,
+} from "lucide-react";
 import { ApiError, api } from "../../lib/api";
+import { SessionGate } from "../../lib/session-gate";
 
 type Category = { id: string; name: string; parentId: string | null };
 type MenuItem = {
@@ -57,7 +71,16 @@ function formatPaise(minor: number) {
 }
 
 export default function PosPage() {
+  return (
+    <SessionGate>
+      <PosContent />
+    </SessionGate>
+  );
+}
+
+function PosContent() {
   const router = useRouter();
+
   useEffect(() => {
     function onKey(event: globalThis.KeyboardEvent) {
       const search = document.getElementById("pos-search");
@@ -69,6 +92,7 @@ export default function PosPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("Could not load POS");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -87,36 +111,50 @@ export default function PosPage() {
     setStatus("loading");
     try {
       const me = await api<{ memberships: Array<{ organizationId: string }> }>("/auth/me");
-      const organizationId = me.memberships[0]?.organizationId;
+      let organizationId = me.memberships[0]?.organizationId;
+      if (!organizationId) {
+        const org = await api<{ id: string }>("/organizations", {
+          method: "POST",
+          body: JSON.stringify({ name: "My organization" }),
+        });
+        organizationId = org.id;
+      }
       if (organizationId) {
         window.localStorage.setItem("niva_organization_id", organizationId);
       }
       const restaurants = await api<{ restaurants: Array<{ id: string }> }>("/restaurants");
-      const restaurantId = restaurants.restaurants[0]?.id;
+      let restaurantId = restaurants.restaurants[0]?.id;
       if (!restaurantId) {
-        throw new Error("No restaurant");
+        const rest = await api<{ id: string }>("/restaurants", {
+          method: "POST",
+          body: JSON.stringify({ name: "My Restaurant" }),
+        });
+        restaurantId = rest.id;
       }
       window.localStorage.setItem("niva_restaurant_id", restaurantId);
       const branches = await api<{ branches: Array<{ id: string }> }>(
         `/restaurants/${restaurantId}/branches`,
       );
-      const branchId = branches.branches[0]?.id;
+      let branchId = branches.branches[0]?.id;
       if (!branchId) {
-        throw new Error("No branch");
+        const br = await api<{ id: string }>(`/restaurants/${restaurantId}/branches`, {
+          method: "POST",
+          body: JSON.stringify({ name: "Main" }),
+        });
+        branchId = br.id;
       }
       window.localStorage.setItem("niva_branch_id", branchId);
-      const [menu, tableData] = await Promise.all([
-        api<{ categories: Category[]; items: MenuItem[] }>(
-          `/restaurants/${restaurantId}/menu?branchId=${branchId}`,
-        ),
+      const [cats, menuItems, tableList] = await Promise.all([
+        api<{ categories: Category[] }>(`/restaurants/${restaurantId}/menu/categories`),
+        api<{ items: MenuItem[] }>(`/restaurants/${restaurantId}/menu?branchId=${branchId}`),
         api<{ tables: Table[] }>(`/branches/${branchId}/tables`),
       ]);
-      setCategories(menu.categories);
-      setItems(menu.items);
-      setTables(tableData.tables);
+      setCategories(cats.categories);
+      setItems(menuItems.items);
+      setTables(tableList.tables);
       setTableId(
-        tableData.tables.find((table) => table.status === "AVAILABLE")?.id ??
-          tableData.tables[0]?.id ??
+        tableList.tables.find((row) => row.status === "VACANT" || row.status === "AVAILABLE")?.id ??
+          tableList.tables[0]?.id ??
           "",
       );
       setError("");
@@ -150,7 +188,7 @@ export default function PosPage() {
     });
   }, [items, categoryId, query]);
 
-  async function addItem(item: MenuItem) {
+  function addItem(item: MenuItem) {
     const key = `${item.id}:`;
     setCart((current) => {
       const existing = current.find((line) => line.key === key);
@@ -172,6 +210,23 @@ export default function PosPage() {
         },
       ];
     });
+  }
+
+  function decrementItem(key: string) {
+    setCart((current) => {
+      const existing = current.find((line) => line.key === key);
+      if (!existing) return current;
+      if (existing.qty <= 1) {
+        return current.filter((line) => line.key !== key);
+      }
+      return current.map((line) =>
+        line.key === key ? { ...line, qty: line.qty - 1 } : line,
+      );
+    });
+  }
+
+  function removeItem(key: string) {
+    setCart((current) => current.filter((line) => line.key !== key));
   }
 
   const cartTotal = cart.reduce((sum, line) => sum + line.unitPriceMinor * line.qty, 0);
@@ -256,14 +311,19 @@ export default function PosPage() {
   if (status === "loading") {
     return (
       <AppShell shell="pos">
-        <Skeleton className="h-screen" />
+        <div className="flex h-screen items-center justify-center p-6">
+          <Skeleton className="h-96 w-full max-w-4xl rounded-2xl" />
+        </div>
       </AppShell>
     );
   }
+
   if (status === "error" && items.length === 0) {
     return (
       <AppShell shell="pos">
-        <ErrorState description={error} onRetry={() => void load()} />
+        <div className="p-8">
+          <ErrorState description={error} onRetry={() => void load()} />
+        </div>
       </AppShell>
     );
   }
@@ -271,44 +331,72 @@ export default function PosPage() {
   if (receipt && order) {
     return (
       <AppShell shell="pos">
-        <div className="mx-auto max-w-md p-6 print:max-w-none">
-          <h1 className="font-mono text-xl">Receipt</h1>
-          <p className="text-sm text-fg-muted">{order.id}</p>
-          <ul className="my-4 space-y-2">
-            {order.items.map((item) => (
-              <li key={item.id} className="flex justify-between font-mono text-sm">
-                <span>
-                  {item.qty}× {item.itemName}
-                  {item.variantName ? ` (${item.variantName})` : ""}
-                </span>
-                <span>{formatPaise(item.lineTotalMinor)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="flex justify-between font-mono">
-            <span>Tax</span>
-            <span>{formatPaise(order.taxTotalMinor)}</span>
-          </p>
-          <p className="flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span>{formatPaise(order.totalMinor)}</span>
-          </p>
-          {order.payments.map((payment) => (
-            <p key={payment.id} className="font-mono text-sm">
-              {payment.method} {formatPaise(payment.amountMinor)}
-            </p>
-          ))}
-          <div className="mt-6 flex gap-2 print:hidden">
-            <Button onClick={() => window.print()}>Print</Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setReceipt(false);
-                setOrder(null);
-              }}
-            >
-              New order
-            </Button>
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl print:border-none print:shadow-none print:max-w-none">
+            <div className="text-center pb-4 border-b border-border/80">
+              <div className="inline-flex items-center justify-center mb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="MR.Genious"
+                  className="h-12 w-auto max-w-[140px] object-contain"
+                />
+              </div>
+              <h1 className="font-display text-xl font-bold tracking-tight text-fg-primary">MR.Genious DINING</h1>
+              <p className="text-xs text-fg-muted font-mono mt-0.5">Official Tax Receipt</p>
+              <div className="mt-2 inline-flex items-center gap-2 text-[11px] font-mono text-fg-muted">
+                <span>Order #{order.id.slice(0, 8)}</span>
+                <span>•</span>
+                <span>{order.type}</span>
+              </div>
+            </div>
+
+            <ul className="my-4 divide-y divide-border/60">
+              {order.items.map((item) => (
+                <li key={item.id} className="py-2 flex justify-between font-mono text-xs">
+                  <span className="text-fg-primary">
+                    <span className="font-bold text-accent mr-1.5">{item.qty}×</span>
+                    {item.itemName}
+                    {item.variantName ? ` (${item.variantName})` : ""}
+                  </span>
+                  <span className="font-medium text-fg-primary">{formatPaise(item.lineTotalMinor)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="space-y-1.5 border-t border-border/80 pt-3 text-xs font-mono">
+              <div className="flex justify-between text-fg-muted">
+                <span>GST Tax (Included)</span>
+                <span>{formatPaise(order.taxTotalMinor)}</span>
+              </div>
+              <div className="flex justify-between text-base font-bold text-fg-primary pt-1 border-t border-dashed border-border/60">
+                <span>Total Amount</span>
+                <span className="text-emerald-400 font-mono">{formatPaise(order.totalMinor)}</span>
+              </div>
+              {order.payments.map((payment) => (
+                <div key={payment.id} className="flex justify-between text-xs text-emerald-500 pt-1">
+                  <span>Paid ({payment.method})</span>
+                  <span>{formatPaise(payment.amountMinor)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex gap-2.5 print:hidden">
+              <Button variant="secondary" className="flex-1" onClick={() => window.print()}>
+                <Printer className="size-4" />
+                Print Bill
+              </Button>
+              <Button
+                variant="gradient"
+                className="flex-1"
+                onClick={() => {
+                  setReceipt(false);
+                  setOrder(null);
+                }}
+              >
+                New Order
+              </Button>
+            </div>
           </div>
         </div>
       </AppShell>
@@ -317,136 +405,281 @@ export default function PosPage() {
 
   return (
     <AppShell shell="pos">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[14rem_1fr_22rem]">
-        <aside className="border-r border-border bg-pos p-3">
-          <p className="mb-3 px-2 text-sm font-medium uppercase tracking-wide text-fg-muted">
+      {/* Top POS Command Header */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/80 bg-surface/90 backdrop-blur-xl px-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-fg-secondary hover:text-fg-primary transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            Hub
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="font-display font-bold text-sm tracking-tight text-fg-primary">POS Terminal</span>
+            <Badge variant="success" dot pulse size="sm">Online</Badge>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {error && <span className="text-xs text-rose-400 font-medium">{error}</span>}
+          <div className="flex items-center rounded-lg border border-border bg-surface/80 p-0.5">
+            <button
+              type="button"
+              onClick={() => setOrderType("DINE_IN")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                orderType === "DINE_IN" ? "bg-accent text-white" : "text-fg-muted hover:text-fg-primary"
+              }`}
+            >
+              Dine-In
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType("TAKEAWAY")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                orderType === "TAKEAWAY" ? "bg-accent text-white" : "text-fg-muted hover:text-fg-primary"
+              }`}
+            >
+              Takeaway
+            </button>
+          </div>
+
+          {orderType === "DINE_IN" && (
+            <Select
+              value={tableId}
+              onChange={(event) => setTableId(event.target.value)}
+              className="h-8 text-xs min-w-[130px]"
+            >
+              {tables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  Table {table.code} ({table.status === "OCCUPIED" ? "Busy" : "Free"})
+                </option>
+              ))}
+            </Select>
+          )}
+        </div>
+      </header>
+
+      {/* Main POS Ergonomic 3-Column Layout */}
+      <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-1 lg:grid-cols-[14rem_1fr_24rem]">
+        {/* Category Rail */}
+        <aside className="border-r border-border/80 bg-surface/40 p-3 space-y-1">
+          <p className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-fg-muted">
             Categories
           </p>
           <button
             type="button"
-            className={`mb-1 flex min-h-[var(--touch-min)] w-full items-center rounded-[var(--radius-md)] px-3 text-left text-[length:var(--text-md)] ${
-              categoryId === "all" ? "bg-elevated" : ""
+            className={`flex min-h-[38px] w-full items-center justify-between rounded-xl px-3 text-left text-xs font-semibold transition-all ${
+              categoryId === "all"
+                ? "bg-accent text-white shadow-md shadow-orange-500/20"
+                : "text-fg-secondary hover:bg-elevated hover:text-fg-primary"
             }`}
             onClick={() => setCategoryId("all")}
           >
-            All
+            <span>All Items</span>
+            <span className="font-mono text-[10px] opacity-75">{items.length}</span>
           </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className={`mb-1 flex min-h-[var(--touch-min)] w-full items-center rounded-[var(--radius-md)] px-3 text-left text-[length:var(--text-md)] ${
-                categoryId === category.id ? "bg-elevated" : ""
-              }`}
-              onClick={() => setCategoryId(category.id)}
-            >
-              {category.name}
-            </button>
-          ))}
+          {categories.map((category) => {
+            const count = items.filter((item) => item.categoryId === category.id).length;
+            const isSelected = categoryId === category.id;
+            return (
+              <button
+                key={category.id}
+                type="button"
+                className={`flex min-h-[38px] w-full items-center justify-between rounded-xl px-3 text-left text-xs font-semibold transition-all ${
+                  isSelected
+                    ? "bg-accent text-white shadow-md shadow-orange-500/20"
+                    : "text-fg-secondary hover:bg-elevated hover:text-fg-primary"
+                }`}
+                onClick={() => setCategoryId(category.id)}
+              >
+                <span className="truncate">{category.name}</span>
+                <span className="font-mono text-[10px] opacity-75">{count}</span>
+              </button>
+            );
+          })}
         </aside>
-        <section className="bg-pos p-4">
-          <div className="mb-4 flex flex-wrap gap-2">
+
+        {/* Menu Items Grid */}
+        <section className="bg-canvas p-4 overflow-y-auto">
+          {/* Quick Search Bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-fg-muted" />
             <Input
               id="pos-search"
-              placeholder="Search items (/ )"
+              placeholder="Search dishes (Press '/' to focus)..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className="min-h-[var(--touch-min)] max-w-sm"
+              className="h-10 pl-10 pr-4 text-sm rounded-xl bg-surface/90 border-border/80 backdrop-blur-md"
             />
-            <Select
-              value={orderType}
-              onChange={(event) =>
-                setOrderType(event.target.value as "DINE_IN" | "TAKEAWAY")
-              }
-              className="min-h-[var(--touch-min)] w-40"
-            >
-              <option value="DINE_IN">Dine-in</option>
-              <option value="TAKEAWAY">Takeaway</option>
-            </Select>
-            {orderType === "DINE_IN" ? (
-              <Select
-                value={tableId}
-                onChange={(event) => setTableId(event.target.value)}
-                className="min-h-[var(--touch-min)] w-48"
-              >
-                {tables.map((table) => (
-                  <option key={table.id} value={table.id}>
-                    {table.code} ({table.status === "OCCUPIED" ? "occupied" : "free"})
-                  </option>
-                ))}
-              </Select>
-            ) : null}
           </div>
+
           {visibleItems.length === 0 ? (
-            <EmptyState title="No items" description="Add a menu or try another search." />
+            <EmptyState title="No menu items found" description="Adjust category filter or query." />
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-              {visibleItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="min-h-24 rounded-[var(--radius-md)] border border-border bg-elevated p-4 text-left text-[length:var(--text-md)]"
-                  onClick={() => addItem(item)}
-                >
-                  <span className="block font-medium">{item.name}</span>
-                  <span className="font-mono text-sm text-fg-muted">
-                    {formatPaise(item.basePriceMinor)}
-                  </span>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              {visibleItems.map((item) => {
+                const cartLine = cart.find((l) => l.menuItemId === item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => addItem(item)}
+                    className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-surface p-4 text-left shadow-sm transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:shadow-orange-500/5 hover:-translate-y-0.5 active:scale-[0.98]"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-sm text-fg-primary group-hover:text-accent transition-colors line-clamp-2">
+                          {item.name}
+                        </span>
+                        {cartLine && (
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-white text-xs font-bold shadow-sm">
+                            {cartLine.qty}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between pt-2 border-t border-border/60">
+                      <span className="font-mono font-bold text-sm text-emerald-400">
+                        {formatPaise(item.basePriceMinor)}
+                      </span>
+                      <span className="rounded-lg bg-surface/80 px-2 py-1 text-[11px] font-semibold text-accent group-hover:bg-accent group-hover:text-white transition-all">
+                        + Add
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>
-        <aside className="flex flex-col border-l border-border bg-surface p-4">
-          <h2 className="mb-3 text-lg font-semibold">Cart</h2>
-          {error && items.length > 0 ? (
-            <p className="mb-2 text-sm text-danger">{error}</p>
-          ) : null}
-          <ul className="flex-1 space-y-2 overflow-auto">
+
+        {/* Live Order & Smart Billing Sidebar */}
+        <aside className="flex flex-col border-l border-border/80 bg-surface/95 backdrop-blur-xl p-4 shadow-xl">
+          <div className="flex items-center justify-between pb-3 border-b border-border/80">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="size-4 text-accent" />
+              <h2 className="text-base font-bold text-fg-primary">Active Bill</h2>
+            </div>
+            <Badge variant="glass" size="sm">
+              {cart.reduce((sum, line) => sum + line.qty, 0)} items
+            </Badge>
+          </div>
+
+          {/* Cart Item Lines */}
+          <ul className="flex-1 space-y-2 overflow-y-auto py-3 pr-1">
+            {cart.length === 0 && !order ? (
+              <div className="py-16 text-center text-fg-muted">
+                <UtensilsCrossed className="mx-auto size-8 opacity-40 mb-2" />
+                <p className="text-xs">Cart is empty</p>
+                <p className="text-[11px] text-fg-muted/70 mt-1">Tap any dish on the left to add.</p>
+              </div>
+            ) : null}
+
             {cart.map((line) => (
-              <li key={line.key} className="flex justify-between gap-2 text-sm">
-                <span>
-                  {line.qty}× {line.name}
-                </span>
-                <span className="font-mono">{formatPaise(line.unitPriceMinor * line.qty)}</span>
+              <li
+                key={line.key}
+                className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-surface/60 p-2.5 backdrop-blur-sm"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-fg-primary">{line.name}</p>
+                  <p className="font-mono text-[11px] text-fg-muted">{formatPaise(line.unitPriceMinor)} each</p>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => decrementItem(line.key)}
+                    className="flex size-7 items-center justify-center rounded-lg bg-surface border border-border text-fg-secondary hover:text-fg-primary hover:border-accent/50"
+                  >
+                    <Minus className="size-3" />
+                  </button>
+                  <span className="w-6 text-center font-mono text-xs font-bold text-fg-primary">
+                    {line.qty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => addItem({ id: line.menuItemId, name: line.name, categoryId: "", basePriceMinor: line.unitPriceMinor, effectiveAvailable: true })}
+                    className="flex size-7 items-center justify-center rounded-lg bg-surface border border-border text-fg-secondary hover:text-fg-primary hover:border-accent/50"
+                  >
+                    <Plus className="size-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(line.key)}
+                    className="flex size-7 items-center justify-center rounded-lg text-fg-muted hover:text-rose-400 ml-1"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
               </li>
             ))}
-            {order ? (
-              <li className="text-sm text-fg-muted">
-                Ticket {order.status} · due {formatPaise(order.balanceMinor)}
-              </li>
-            ) : null}
+
+            {order && (
+              <div className="rounded-xl border border-accent/30 bg-accent/10 p-3 text-xs">
+                <div className="flex justify-between font-semibold text-accent">
+                  <span>Ticket Status</span>
+                  <span>{order.status}</span>
+                </div>
+                <div className="flex justify-between text-fg-muted mt-1 font-mono">
+                  <span>Balance Due</span>
+                  <span className="text-white font-bold">{formatPaise(order.balanceMinor)}</span>
+                </div>
+              </div>
+            )}
           </ul>
-          <p className="my-3 flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span className="font-mono">
-              {formatPaise(order ? order.totalMinor : cartTotal)}
-            </span>
-          </p>
-          <div className="grid gap-2">
-            <Button
-              size="lg"
-              disabled={busy || cart.length === 0}
-              onClick={() => void placeOrder()}
-            >
-              Place order
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              disabled={busy || !order || order.balanceMinor <= 0}
-              onClick={() => void pay()}
-            >
-              Pay cash
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              disabled={busy || !order || order.balanceMinor > 0}
-              onClick={() => void closeCheck()}
-            >
-              Complete
-            </Button>
+
+          {/* Billing & Settlement Total */}
+          <div className="border-t border-border/80 pt-3 space-y-2">
+            <div className="flex justify-between text-xs text-fg-muted">
+              <span>Subtotal</span>
+              <span className="font-mono">{formatPaise(cartTotal)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-fg-muted">
+              <span>Estimated GST</span>
+              <span className="font-mono">Included</span>
+            </div>
+            <div className="flex justify-between items-baseline pt-1 border-t border-dashed border-border/80">
+              <span className="text-base font-bold text-fg-primary">Total</span>
+              <span className="font-mono text-2xl font-extrabold text-emerald-400">
+                {formatPaise(order ? order.totalMinor : cartTotal)}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid gap-2 pt-2">
+              <Button
+                variant="gradient"
+                size="lg"
+                disabled={busy || cart.length === 0}
+                onClick={() => void placeOrder()}
+                className="w-full shadow-lg shadow-orange-500/20"
+              >
+                <UtensilsCrossed className="size-4" />
+                Place Kitchen Order
+              </Button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="md"
+                  variant="secondary"
+                  disabled={busy || !order || order.balanceMinor <= 0}
+                  onClick={() => void pay()}
+                >
+                  Pay Cash
+                </Button>
+                <Button
+                  size="md"
+                  variant="success"
+                  disabled={busy || !order || order.balanceMinor > 0}
+                  onClick={() => void closeCheck()}
+                >
+                  <CheckCircle2 className="size-4" />
+                  Close Bill
+                </Button>
+              </div>
+            </div>
           </div>
         </aside>
       </div>

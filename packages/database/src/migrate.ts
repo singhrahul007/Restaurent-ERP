@@ -39,11 +39,18 @@ async function seedRbac(sql: Sql): Promise<void> {
   }
 }
 
+async function seedDefaultUsers(sql: Sql): Promise<void> {
+  const seedPath = resolve(packageRoot, "seed/default-users.sql");
+  const source = readFileSync(seedPath, "utf8");
+  await sql.unsafe(source);
+}
+
 const sql = postgres(databaseUrl, { max: 1 });
 const db = drizzle(sql);
 
 await migrate(db, { migrationsFolder: resolve(packageRoot, "drizzle") });
 await seedRbac(sql);
+await seedDefaultUsers(sql);
 await enableRls(sql);
 await seedPlatformAdmin(sql);
 await sql.end();

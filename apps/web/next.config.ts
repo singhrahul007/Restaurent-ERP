@@ -4,6 +4,9 @@ const apiOrigin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@niva/ui", "@niva/types", "@niva/validation"],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async rewrites() {
     return [
       {

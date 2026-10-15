@@ -6,23 +6,28 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "../lib/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 font-medium transition-[background-color,opacity,transform] duration-[var(--duration-fast)] ease-[var(--easing-standard)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 font-medium transition-all duration-[var(--duration-fast)] ease-[var(--easing-standard)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 select-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         primary:
-          "bg-accent text-fg-inverse hover:bg-accent-hover rounded-[var(--radius-md)]",
+          "bg-accent text-white hover:bg-accent-hover shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-glow)] rounded-[var(--radius-md)]",
+        gradient:
+          "bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white font-semibold hover:opacity-95 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-glow)] rounded-[var(--radius-md)]",
         secondary:
-          "bg-elevated text-fg-primary border border-border hover:border-border-strong rounded-[var(--radius-md)]",
+          "bg-elevated text-fg-primary border border-border hover:border-border-strong hover:bg-elevated/80 rounded-[var(--radius-md)] shadow-[var(--shadow-sm)]",
         outline:
-          "border border-border-strong bg-transparent text-fg-primary hover:bg-surface rounded-[var(--radius-md)]",
+          "border border-border-strong bg-transparent text-fg-primary hover:bg-surface/80 rounded-[var(--radius-md)]",
         ghost: "text-fg-secondary hover:bg-surface hover:text-fg-primary rounded-[var(--radius-md)]",
-        danger: "bg-danger text-fg-inverse hover:opacity-90 rounded-[var(--radius-md)]",
+        glass:
+          "bg-white/10 backdrop-blur-md text-fg-primary border border-white/15 hover:bg-white/15 rounded-[var(--radius-md)] shadow-sm",
+        danger: "bg-danger text-white hover:opacity-90 shadow-[var(--shadow-sm)] rounded-[var(--radius-md)]",
+        success: "bg-emerald-600 text-white hover:bg-emerald-500 shadow-[var(--shadow-sm)] rounded-[var(--radius-md)]",
       },
       size: {
-        sm: "h-9 px-3 text-sm",
-        md: "h-10 min-h-[var(--touch-min)] px-4 text-[length:var(--text-md)]",
-        lg: "h-12 min-h-[var(--touch-min)] px-5 text-[length:var(--text-lg)]",
+        sm: "h-8.5 px-3 text-xs rounded-[var(--radius-sm)]",
+        md: "h-10 min-h-[var(--touch-min)] px-4 text-[length:var(--text-sm)]",
+        lg: "h-12 min-h-[var(--touch-min)] px-6 text-[length:var(--text-md)] font-semibold",
         icon: "size-[var(--touch-min)] rounded-[var(--radius-md)]",
       },
     },

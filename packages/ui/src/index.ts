@@ -1,6 +1,7 @@
 export { cn } from "./lib/cn";
 export { Button, buttonVariants, type ButtonProps } from "./components/button";
 export { IconButton, type IconButtonProps } from "./components/icon-button";
+export { Badge, type BadgeProps } from "./components/badge";
 export { Input, type InputProps } from "./components/input";
 export { Label } from "./components/label";
 export {
@@ -14,6 +15,7 @@ export {
   TableHead,
   TableHeader,
   TableRow,
+  type CardProps,
 } from "./components/card";
 export {
   Dialog,
@@ -35,4 +37,4 @@ export { Sheet, SheetClose, SheetContent, SheetTrigger } from "./components/shee
 export { PageHeader } from "./components/page-header";
 export { AppFrame, Sidebar, SidebarItem, Topbar } from "./components/chrome";
 export { AppShell, SHELLS, type ShellName } from "./components/app-shell";
-export { FadeIn, ScaleIn, useDecorativeMotion } from "./motion/presets";
+export { FadeIn, ScaleIn, StaggerContainer, StaggerItem, useDecorativeMotion } from "./motion/presets";

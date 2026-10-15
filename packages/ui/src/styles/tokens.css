@@ -1,37 +1,49 @@
 /*
-  Niva design tokens. Hex and raw color values live only in this file.
-  Feature UI must use these variables (or Tailwind mappings below).
+  Niva design tokens. Modern Restaurant ERP Design System.
+  Features: Light & Dark theme, rich vibrant accents, glow & glassmorphism, smooth animations.
 */
 
 :root {
-  --bg-canvas: #f4eee6;
-  --bg-surface: #fbf7f2;
-  --bg-elevated: #ffffff;
-  --bg-pos: #ebe4db;
-  --bg-kds: #0b0b0a;
+  --bg-canvas: #0b0f19;
+  --bg-surface: #111827;
+  --bg-elevated: #1f2937;
+  --bg-pos: #0d1322;
+  --bg-kds: #050505;
 
-  --fg-primary: #1c1917;
-  --fg-secondary: #44403c;
-  --fg-muted: #78716c;
-  --fg-inverse: #fafaf9;
+  --fg-primary: #f9fafb;
+  --fg-secondary: #d1d5db;
+  --fg-muted: #9ca3af;
+  --fg-inverse: #111827;
 
-  --accent: #c2410c;
-  --accent-hover: #9a3412;
+  /* Rich saffron/ember restaurant accent */
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+  --accent-muted: rgba(249, 115, 22, 0.15);
+  --accent-glow: rgba(249, 115, 22, 0.4);
 
-  --success: #15803d;
-  --warning: #b45309;
-  --danger: #b91c1c;
-  --info: #1d4ed8;
+  --success: #10b981;
+  --success-muted: rgba(16, 185, 129, 0.15);
+  --success-glow: rgba(16, 185, 129, 0.4);
 
-  --border: #e4dcd2;
-  --border-strong: #c4b8ab;
+  --warning: #f59e0b;
+  --warning-muted: rgba(245, 158, 11, 0.15);
 
-  --chart-1: #0072b2;
-  --chart-2: #e69f00;
-  --chart-3: #009e73;
-  --chart-4: #cc79a7;
-  --chart-5: #d55e00;
-  --chart-6: #56b4e9;
+  --danger: #ef4444;
+  --danger-muted: rgba(239, 68, 68, 0.15);
+
+  --info: #3b82f6;
+  --info-muted: rgba(59, 130, 246, 0.15);
+
+  --border: #1f2937;
+  --border-strong: #374151;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --chart-1: #f97316;
+  --chart-2: #10b981;
+  --chart-3: #3b82f6;
+  --chart-4: #8b5cf6;
+  --chart-5: #ec4899;
+  --chart-6: #eab308;
 
   --font-sans: var(--font-sans-face, "DM Sans"), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display-face, Fraunces), ui-serif, georgia, serif;
@@ -54,13 +66,16 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-full: 999px;
 
-  --shadow-sm: 0 1px 2px rgb(28 25 23 / 0.06);
-  --shadow-md: 0 8px 24px rgb(28 25 23 / 0.08);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 16px -1px rgb(0 0 0 / 0.4), 0 2px 6px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 32px -4px rgb(0 0 0 / 0.5), 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-glow: 0 0 20px -3px var(--accent-glow);
 
   --z-base: 0;
   --z-sticky: 20;
@@ -70,80 +85,79 @@
   --z-toast: 70;
   --z-kds-alert: 80;
 
-  --duration-fast: 120ms;
-  --duration-med: 200ms;
-  --duration-slow: 320ms;
-  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 150ms;
+  --duration-med: 250ms;
+  --duration-slow: 400ms;
+  --easing-standard: cubic-bezier(0.16, 1, 0.3, 1);
 
   --focus-ring: 2px solid var(--accent);
   --focus-offset: 2px;
   --touch-min: 44px;
 }
 
-/* Super Admin: dense, cool, not restaurant-orange heavy */
+/* Light mode support via data-theme="light" */
+[data-theme="light"] {
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-pos: #f8fafc;
+
+  --fg-primary: #0f172a;
+  --fg-secondary: #334155;
+  --fg-muted: #64748b;
+  --fg-inverse: #f8fafc;
+
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --border-subtle: rgba(0, 0, 0, 0.05);
+
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 16px -2px rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 12px 32px -4px rgb(0 0 0 / 0.12), 0 4px 12px -2px rgb(0 0 0 / 0.08);
+}
+
+/* Platform super admin shell */
 [data-shell="platform"] {
-  --bg-canvas: #121214;
-  --bg-surface: #1a1a1f;
-  --bg-elevated: #23232b;
-  --fg-primary: #f4f4f5;
-  --fg-secondary: #d4d4d8;
-  --fg-muted: #a1a1aa;
-  --fg-inverse: #18181b;
-  --accent: #fb923c;
-  --accent-hover: #fdba74;
-  --border: #3f3f46;
-  --border-strong: #71717a;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.45);
+  --bg-canvas: #090b10;
+  --bg-surface: #10141e;
+  --bg-elevated: #181e2d;
+  --border: #232b3e;
+  --border-strong: #34415e;
 }
 
-/* Owner analytics (default :root warmth, explicit for completeness) */
-[data-shell="owner"] {
-  --bg-canvas: #f4eee6;
-  --bg-surface: #fbf7f2;
-}
-
-/* POS: high-contrast workspace, large targets, muted motion via CSS */
+/* POS: optimized for fast responsive ordering with high contrast */
 [data-shell="pos"] {
-  --bg-canvas: var(--bg-pos);
-  --bg-surface: #f7f1ea;
-  --accent: #c2410c;
-  --duration-fast: 80ms;
-  --duration-med: 80ms;
-  --duration-slow: 80ms;
+  --bg-canvas: #0a0e17;
+  --bg-surface: #111726;
+  --bg-elevated: #1a2236;
+  --accent: #f97316;
+  --duration-fast: 90ms;
+  --duration-med: 120ms;
 }
 
-/*
-  KDS: near-black, high-contrast tickets.
-  Body ≥ 20px, titles ≥ 28px. Alert layer uses --z-kds-alert.
-  Contrast: light text on #0b0b0a; ember/amber accent vs black exceeds 7:1 for large text.
-*/
+/* KDS: kitchen screen */
 [data-shell="kds"] {
-  --bg-canvas: #050505;
-  --bg-surface: #0b0b0a;
-  --bg-elevated: #161614;
-  --fg-primary: #fafaf9;
-  --fg-secondary: #e7e5e4;
-  --fg-muted: #a8a29e;
-  --fg-inverse: #0c0a09;
-  --accent: #f5c518;
-  --accent-hover: #ffe566;
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --danger: #fb7185;
-  --info: #7dd3fc;
-  --border: #44403c;
-  --border-strong: #a8a29e;
+  --bg-canvas: #030406;
+  --bg-surface: #0a0d13;
+  --bg-elevated: #121824;
+  --fg-primary: #ffffff;
+  --fg-secondary: #f3f4f6;
+  --fg-muted: #9ca3af;
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --border: #1f2937;
+  --border-strong: #4b5563;
   --text-md: 1.25rem;
   --text-xl: 1.75rem;
-  --shadow-sm: none;
-  --shadow-md: none;
 }
 
 [data-shell="driver"] {
-  --bg-canvas: #f7f3ee;
-  --bg-surface: #ffffff;
-  --accent: #c2410c;
+  --bg-canvas: #0b0f19;
+  --bg-surface: #111827;
+  --accent: #f97316;
 }
 
 @theme inline {
@@ -158,12 +172,20 @@
   --color-fg-inverse: var(--fg-inverse);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-glow: var(--accent-glow);
   --color-success: var(--success);
+  --color-success-muted: var(--success-muted);
+  --color-success-glow: var(--success-glow);
   --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
   --color-danger: var(--danger);
+  --color-danger-muted: var(--danger-muted);
   --color-info: var(--info);
+  --color-info-muted: var(--info-muted);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -181,13 +203,39 @@
   font-family: var(--font-mono);
 }
 
+/* Glassmorphism utility */
+@utility glass-panel {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@utility glass-card {
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Glow effects */
+@utility glow-accent {
+  box-shadow: 0 0 24px -4px var(--accent-glow);
+}
+
+@utility glow-success {
+  box-shadow: 0 0 24px -4px var(--success-glow);
+}
+
 html {
   font-family: var(--font-sans);
+  color-scheme: dark;
 }
 
 body {
   background: var(--bg-canvas);
   color: var(--fg-primary);
+  min-height: 100vh;
 }
 
 :focus-visible {
@@ -197,6 +245,79 @@ body {
 
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}
+
+/* Modern Animations */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes radar {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-radar {
+  animation: radar 2s infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

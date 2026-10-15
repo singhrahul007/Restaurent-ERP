@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { AppShell, ErrorState, Skeleton } from "@niva/ui";
+import { AppShell, Skeleton } from "@niva/ui";
 import { useRequireSession } from "../../lib/session-gate";
 
 export default function DriverLayout({ children }: { children: ReactNode }) {

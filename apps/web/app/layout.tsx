@@ -21,8 +21,16 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Niva",
-  description: "Restaurant operating system",
+  title: {
+    default: "MR.Genious",
+    template: "%s | MR.Genious",
+  },
+  description: "MR.Genious Restaurant Operating System & ERP",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
