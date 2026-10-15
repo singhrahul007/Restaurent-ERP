@@ -96,5 +96,70 @@ describe("ONDC Service Unit Tests", () => {
     expect(nack.message?.ack.status).toBe("NACK");
     expect(nack.error?.code).toBe("30000");
   });
+
+  it("builds branch catalog and formats on_search payload", async () => {
+    const mockMenuRepo = {
+      async listCategories() {
+        return [{ id: "c-1", name: "Beverages" }];
+      },
+      async listItems() {
+        return [
+          {
+            id: "i-1",
+            name: "Masala Chai",
+            categoryId: "c-1",
+            basePriceMinor: 4000,
+            available: true,
+          },
+        ];
+      },
+      async listAvailability() {
+        return [];
+      },
+    };
+
+    const mockRestaurantRepo = {
+      async findRestaurant() {
+        return { id: "r-1", name: "Chai Point", currency: "INR" };
+      },
+      async findBranch() {
+        return { id: "b-1", name: "Koramangala", city: "Bengaluru" };
+      },
+    };
+
+    const fullService = createOndcService(
+      mockRepo as any,
+      dummyKek,
+      mockMenuRepo as any,
+      mockRestaurantRepo as any,
+    );
+
+    const catalog = await fullService.buildCatalogForBranch("org-1", "r-1", "b-1");
+    expect(catalog["bpp/providers"]?.length).toBe(1);
+    expect(catalog["bpp/providers"]![0]!.items?.length).toBe(1);
+    expect(catalog["bpp/providers"]![0]!.items![0]!.descriptor.name).toBe("Masala Chai");
+
+    const context = {
+      domain: "ONDC:RET11",
+      country: "IND",
+      city: "std:080",
+      action: "search" as const,
+      core_version: "1.2.0",
+      bap_id: "bap.app",
+      bap_uri: "https://bap.app/ondc",
+      transaction_id: "tx-catalog-1",
+      message_id: "msg-catalog-1",
+      timestamp: new Date().toISOString(),
+    };
+
+    const onSearchPayload = fullService.createOnSearchPayload(context, catalog, {
+      bppId: "seller.niva.app",
+      bppUri: "https://seller.niva.app/ondc",
+    });
+
+    expect(onSearchPayload.context.action).toBe("on_search");
+    expect(onSearchPayload.context.bpp_id).toBe("seller.niva.app");
+    expect(onSearchPayload.message.catalog).toBe(catalog);
+  });
 });
 

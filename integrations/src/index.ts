@@ -12,3 +12,7 @@ export {
   parseBecknAuthHeader,
   verifyBecknAuthHeader,
 } from "./ondc/crypto.js";
+export {
+  buildOndcCatalog,
+  type RestaurantMenuCatalogInput,
+} from "./ondc/catalog.js";

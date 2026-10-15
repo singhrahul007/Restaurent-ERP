@@ -1,4 +1,5 @@
 import {
+  buildOndcCatalog,
   createBecknAuthHeader,
   decryptSecret,
   encryptSecret,
@@ -6,12 +7,24 @@ import {
   parseBecknAuthHeader,
   verifyBecknAuthHeader,
 } from "@niva/integrations";
-import type { BecknContext, BecknResponse } from "@niva/types";
+import type {
+  BecknCatalog,
+  BecknContext,
+  BecknOnSearchPayload,
+  BecknResponse,
+} from "@niva/types";
 import { AppError } from "../../lib/errors.js";
 import type { TenantContext } from "../../lib/tenant-context.js";
+import type { MenuRepository } from "../menu/menu.repository.js";
+import type { RestaurantRepository } from "../restaurants/restaurants.repository.js";
 import type { OndcRepository, UpsertOndcSellerConfigInput } from "./ondc.repository.js";
 
-export function createOndcService(repo: OndcRepository, kek: string) {
+export function createOndcService(
+  repo: OndcRepository,
+  kek: string,
+  menuRepo?: MenuRepository,
+  restaurantRepo?: RestaurantRepository,
+) {
   return {
     generateKeys() {
       return generateOndcSigningKeyPair();
@@ -180,6 +193,80 @@ export function createOndcService(repo: OndcRepository, kek: string) {
         privateKeyBase64: privateKey,
         payload,
       });
+    },
+
+    async buildCatalogForBranch(
+      organizationId: string,
+      restaurantId: string,
+      branchId: string,
+      providerLocationId?: string,
+    ): Promise<BecknCatalog> {
+      if (!menuRepo || !restaurantRepo) {
+        throw new Error("REPOSITORIES_NOT_CONFIGURED");
+      }
+
+      const restaurant = await restaurantRepo.findRestaurant(organizationId, restaurantId);
+      if (!restaurant) {
+        throw new AppError("NOT_FOUND", "Restaurant not found", 404);
+      }
+
+      const branch = await restaurantRepo.findBranch(organizationId, branchId);
+      if (!branch) {
+        throw new AppError("NOT_FOUND", "Branch not found", 404);
+      }
+
+      const categories = await menuRepo.listCategories(organizationId, restaurantId);
+      const items = await menuRepo.listItems(organizationId, restaurantId);
+      const availability = await menuRepo.listAvailability(organizationId, restaurantId);
+
+      const branchOverrides = availability
+        .filter((row) => row.branchId === branchId || row.branchId === null)
+        .map((row) => ({ menuItemId: row.menuItemId, available: row.available }));
+
+      return buildOndcCatalog({
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          currency: restaurant.currency ?? "INR",
+        },
+        branch: {
+          id: branch.id,
+          name: branch.name,
+          addressLine1: restaurant.addressLine1,
+          city: restaurant.city,
+          region: restaurant.region,
+          postalCode: restaurant.postalCode,
+          country: restaurant.country,
+        },
+        categories,
+        items,
+        availabilityOverrides: branchOverrides,
+        providerLocationId,
+      });
+    },
+
+    createOnSearchPayload(
+      context: BecknContext,
+      catalog: BecknCatalog,
+      bppConfig: {
+        bppId: string;
+        bppUri: string;
+      },
+    ): BecknOnSearchPayload {
+      const responseContext: BecknContext = {
+        ...context,
+        action: "on_search",
+        bpp_id: bppConfig.bppId,
+        bpp_uri: bppConfig.bppUri,
+        timestamp: new Date().toISOString(),
+      };
+
+      return {
+        context: responseContext,
+        message: {
+          catalog,
+        },
+      };
     },
 
     async auditTransaction(

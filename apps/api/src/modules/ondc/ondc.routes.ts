@@ -10,6 +10,8 @@ import { createRequireAuth } from "../auth/auth.middleware.js";
 import { createAuthRepository } from "../auth/auth.repository.js";
 import { createTenancyRepository } from "../tenancy/tenancy.repository.js";
 import { createRequireTenant } from "../../lib/tenant-context.js";
+import { createMenuRepository } from "../menu/menu.repository.js";
+import { createRestaurantRepository } from "../restaurants/restaurants.repository.js";
 import { createOndcRepository } from "./ondc.repository.js";
 import { createOndcService } from "./ondc.service.js";
 
@@ -40,7 +42,9 @@ export const ondcRoutes: FastifyPluginAsync<{
   const tenantAuth = [requireAuth, requireTenant];
 
   const repo = createOndcRepository(opts.db);
-  const service = createOndcService(repo, kekFromEnv(opts.env));
+  const menuRepo = createMenuRepository(opts.db);
+  const restaurantRepo = createRestaurantRepository(opts.db);
+  const service = createOndcService(repo, kekFromEnv(opts.env), menuRepo, restaurantRepo);
 
   // --- Seller configuration endpoints for Restaurant Portal ---
 
@@ -119,6 +123,33 @@ export const ondcRoutes: FastifyPluginAsync<{
         data: config,
         meta: { requestId: request.id },
       });
+    },
+  );
+
+  // Preview generated ONDC catalog for a branch
+  app.get(
+    "/restaurants/:restaurantId/branches/:branchId/ondc/catalog",
+    {
+      schema: { tags: ["ondc"] },
+      preHandler: [...tenantAuth, requirePermission("menu.manage")],
+    },
+    async (request) => {
+      const { restaurantId, branchId } = request.params as {
+        restaurantId: string;
+        branchId: string;
+      };
+      const config = await repo.findSellerConfigByBranch(request.tenant!.organizationId, branchId);
+      const catalog = await service.buildCatalogForBranch(
+        request.tenant!.organizationId,
+        restaurantId,
+        branchId,
+        config?.providerLocationId ?? undefined,
+      );
+      return {
+        success: true,
+        data: { catalog },
+        meta: { requestId: request.id },
+      };
     },
   );
 
