@@ -80,65 +80,72 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
                 Intelligence
               </div>
-              <SidebarItem
-                href="/dashboard"
-                active={pathname === "/dashboard"}
-                icon={<LayoutDashboard className="size-4" />}
-              >
-                Analytics & P&L
-              </SidebarItem>
-              <SidebarItem
-                href="/ops"
-                active={pathname === "/ops"}
-                icon={<Zap className="size-4" />}
-                badge={<Badge variant="primary" size="sm">Live</Badge>}
-              >
-                Manager Ops
-              </SidebarItem>
+              <Link href="/dashboard">
+                <SidebarItem
+                  active={pathname === "/dashboard"}
+                  icon={<LayoutDashboard className="size-4" />}
+                >
+                  Analytics & P&L
+                </SidebarItem>
+              </Link>
+              <Link href="/ops">
+                <SidebarItem
+                  active={pathname === "/ops"}
+                  icon={<Zap className="size-4" />}
+                  badge={<Badge variant="primary" size="sm">Live</Badge>}
+                >
+                  Manager Ops
+                </SidebarItem>
+              </Link>
 
               <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
                 Operations
               </div>
-              <SidebarItem
-                href="/pos"
-                active={pathname === "/pos"}
-                icon={<UtensilsCrossed className="size-4" />}
-              >
-                POS Register
-              </SidebarItem>
-              <SidebarItem
-                href="/queue"
-                active={pathname === "/queue"}
-                icon={<Users className="size-4" />}
-                badge={<Badge variant="purple" size="sm">Tokens</Badge>}
-              >
-                Queue & Waitlist
-              </SidebarItem>
-              <SidebarItem
-                href="/kds"
-                active={pathname === "/kds"}
-                icon={<Flame className="size-4" />}
-              >
-                Kitchen KDS
-              </SidebarItem>
-              <SidebarItem
-                href="/driver"
-                active={pathname.startsWith("/driver")}
-                icon={<Bike className="size-4" />}
-              >
-                Rider Fleet
-              </SidebarItem>
+              <Link href="/pos">
+                <SidebarItem
+                  active={pathname === "/pos"}
+                  icon={<UtensilsCrossed className="size-4" />}
+                >
+                  POS Register
+                </SidebarItem>
+              </Link>
+              <Link href="/queue">
+                <SidebarItem
+                  active={pathname === "/queue"}
+                  icon={<Users className="size-4" />}
+                  badge={<Badge variant="purple" size="sm">Tokens</Badge>}
+                >
+                  Queue & Waitlist
+                </SidebarItem>
+              </Link>
+              <Link href="/kds">
+                <SidebarItem
+                  active={pathname === "/kds"}
+                  icon={<Flame className="size-4" />}
+                >
+                  Kitchen KDS
+                </SidebarItem>
+              </Link>
+              <Link href="/driver">
+                <SidebarItem
+                  active={pathname.startsWith("/driver")}
+                  icon={<Bike className="size-4" />}
+                >
+                  Rider Fleet
+                </SidebarItem>
+              </Link>
 
               <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
                 Configuration
               </div>
-              <SidebarItem
-                href="/setup/restaurant"
-                active={pathname.startsWith("/setup")}
-                icon={<Settings className="size-4" />}
-              >
-                Store Setup
-              </SidebarItem>
+              <Link href="/setup/restaurant">
+                <SidebarItem
+                  active={pathname.startsWith("/setup")}
+                  icon={<Settings className="size-4" />}
+                >
+                  Store Setup
+                </SidebarItem>
+              </Link>
 
               {isAdmin && (
                 <>
@@ -146,13 +153,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <span>Admin Control</span>
                     <Badge variant="purple" size="sm">Root</Badge>
                   </div>
-                  <SidebarItem
-                    href="/dashboard/access-control"
-                    active={pathname.startsWith("/dashboard/access-control")}
-                    icon={<ShieldCheck className="size-4 text-amber-500" />}
-                  >
-                    Access & Roles Studio
-                  </SidebarItem>
+                  <Link href="/dashboard/access-control">
+                    <SidebarItem
+                      active={pathname.startsWith("/dashboard/access-control")}
+                      icon={<ShieldCheck className="size-4 text-amber-500" />}
+                    >
+                      Access & Roles Studio
+                    </SidebarItem>
+                  </Link>
                 </>
               )}
             </Sidebar>

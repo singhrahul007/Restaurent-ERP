@@ -33,18 +33,26 @@ export default function OpsLayout({ children }: { children: ReactNode }) {
           }
           sidebar={
             <Sidebar footer={<SidebarUserFooter />}>
-              <SidebarItem href="/ops" active={pathname === "/ops"}>
-                Live board
-              </SidebarItem>
-              <SidebarItem href="/kds" active={pathname.startsWith("/kds")}>
-                Kitchen
-              </SidebarItem>
-              <SidebarItem href="/pos" active={pathname.startsWith("/pos")}>
-                POS
-              </SidebarItem>
-              <SidebarItem href="/dashboard" active={pathname === "/dashboard"}>
-                Owner dashboard
-              </SidebarItem>
+              <Link href="/ops">
+                <SidebarItem active={pathname === "/ops"}>
+                  Live board
+                </SidebarItem>
+              </Link>
+              <Link href="/kds">
+                <SidebarItem active={pathname.startsWith("/kds")}>
+                  Kitchen
+                </SidebarItem>
+              </Link>
+              <Link href="/pos">
+                <SidebarItem active={pathname.startsWith("/pos")}>
+                  POS
+                </SidebarItem>
+              </Link>
+              <Link href="/dashboard">
+                <SidebarItem active={pathname === "/dashboard"}>
+                  Owner dashboard
+                </SidebarItem>
+              </Link>
             </Sidebar>
           }
         >

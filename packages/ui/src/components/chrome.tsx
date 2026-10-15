@@ -1,6 +1,7 @@
 "use client";
 
 import type { HTMLAttributes, ReactNode } from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { cn } from "../lib/cn";
 
 export function Topbar({
@@ -58,13 +59,16 @@ export function SidebarItem({
   badge,
   children,
   className,
-}: {
+  asChild = false,
+  ...props
+}: HTMLAttributes<HTMLElement> & {
   href?: string;
   active?: boolean;
   icon?: ReactNode;
   badge?: ReactNode;
   children: ReactNode;
   className?: string;
+  asChild?: boolean;
 }) {
   const styles = cn(
     "group flex min-h-[var(--touch-min)] items-center gap-3 rounded-[var(--radius-md)] px-3.5 py-2 text-sm font-medium text-fg-secondary transition-all duration-150 hover:bg-elevated/70 hover:text-fg-primary",
@@ -90,15 +94,23 @@ export function SidebarItem({
     </>
   );
 
+  if (asChild) {
+    return (
+      <Slot className={styles} {...props}>
+        {children}
+      </Slot>
+    );
+  }
+
   if (href) {
     return (
-      <a href={href} className={styles}>
+      <a href={href} className={styles} {...(props as HTMLAttributes<HTMLAnchorElement>)}>
         {inner}
       </a>
     );
   }
   return (
-    <button type="button" className={styles}>
+    <button type="button" className={styles} {...(props as HTMLAttributes<HTMLButtonElement>)}>
       {inner}
     </button>
   );

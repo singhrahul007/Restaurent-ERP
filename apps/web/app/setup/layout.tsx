@@ -33,36 +33,56 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
           }
           sidebar={
             <Sidebar footer={<SidebarUserFooter />}>
-              <SidebarItem href="/dashboard" active={pathname === "/dashboard"}>
-                Dashboard
-              </SidebarItem>
-              <SidebarItem href="/setup/restaurant" active={pathname.startsWith("/setup/restaurant")}>
-                Restaurant
-              </SidebarItem>
-              <SidebarItem href="/setup/branches" active={pathname.startsWith("/setup/branches")}>
-                Branches
-              </SidebarItem>
-              <SidebarItem href="/setup/tables" active={pathname.startsWith("/setup/tables")}>
-                Tables
-              </SidebarItem>
-              <SidebarItem href="/setup/staff" active={pathname.startsWith("/setup/staff")}>
-                Staff
-              </SidebarItem>
-              <SidebarItem href="/setup/menu" active={pathname.startsWith("/setup/menu")}>
-                Menu
-              </SidebarItem>
-              <SidebarItem href="/setup/inventory" active={pathname.startsWith("/setup/inventory")}>
-                Inventory
-              </SidebarItem>
-              <SidebarItem href="/setup/suppliers" active={pathname.startsWith("/setup/suppliers")}>
-                Suppliers
-              </SidebarItem>
-              <SidebarItem href="/setup/recipes" active={pathname.startsWith("/setup/recipes")}>
-                Recipes
-              </SidebarItem>
-              <SidebarItem href="/setup/ondc" active={pathname.startsWith("/setup/ondc")}>
-                ONDC Channel
-              </SidebarItem>
+              <Link href="/dashboard">
+                <SidebarItem active={pathname === "/dashboard"}>
+                  Dashboard
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/restaurant">
+                <SidebarItem active={pathname.startsWith("/setup/restaurant")}>
+                  Restaurant
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/branches">
+                <SidebarItem active={pathname.startsWith("/setup/branches")}>
+                  Branches
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/tables">
+                <SidebarItem active={pathname.startsWith("/setup/tables")}>
+                  Tables
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/staff">
+                <SidebarItem active={pathname.startsWith("/setup/staff")}>
+                  Staff
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/menu">
+                <SidebarItem active={pathname.startsWith("/setup/menu")}>
+                  Menu
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/inventory">
+                <SidebarItem active={pathname.startsWith("/setup/inventory")}>
+                  Inventory
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/suppliers">
+                <SidebarItem active={pathname.startsWith("/setup/suppliers")}>
+                  Suppliers
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/recipes">
+                <SidebarItem active={pathname.startsWith("/setup/recipes")}>
+                  Recipes
+                </SidebarItem>
+              </Link>
+              <Link href="/setup/ondc">
+                <SidebarItem active={pathname.startsWith("/setup/ondc")}>
+                  ONDC Channel
+                </SidebarItem>
+              </Link>
             </Sidebar>
           }
         >
