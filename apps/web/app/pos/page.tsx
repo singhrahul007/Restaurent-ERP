@@ -515,6 +515,16 @@ function PosContent() {
             >
               Takeaway
             </button>
+            <button
+              type="button"
+              onClick={() => setOrderType("DELIVERY")}
+              className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                orderType === "DELIVERY" ? "bg-blue-600 text-white" : "text-fg-muted hover:text-fg-primary"
+              }`}
+            >
+              <Bike className="size-3.5" />
+              Delivery
+            </button>
           </div>
 
           {orderType === "DINE_IN" && (
@@ -731,8 +741,23 @@ function PosContent() {
                 className="w-full shadow-lg shadow-orange-500/20"
               >
                 <UtensilsCrossed className="size-4" />
-                Place Kitchen Order
+                {orderType === "DELIVERY" ? "Create Delivery Order" : "Place Kitchen Order"}
               </Button>
+
+              {order && order.type === "DELIVERY" && (
+                <Button
+                  size="md"
+                  variant="outline"
+                  className="w-full border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300"
+                  onClick={() => {
+                    setAssignedSuccess(null);
+                    setAssignOpen(true);
+                  }}
+                >
+                  <Bike className="size-4" />
+                  Assign Delivery Driver
+                </Button>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -757,6 +782,157 @@ function PosContent() {
           </div>
         </aside>
       </div>
+
+      {/* Driver Assignment Modal Dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="max-w-md bg-surface/95 backdrop-blur-2xl border-border/80 shadow-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-400">
+                <Bike className="size-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-fg-primary">
+                  Assign Delivery Driver
+                </DialogTitle>
+                <DialogDescription className="text-xs text-fg-muted">
+                  Dispatch this order to an online fleet driver with real-time OTP security.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {assignedSuccess ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
+                <CheckCircle2 className="mx-auto size-10 text-emerald-400 mb-2" />
+                <h4 className="text-sm font-bold text-fg-primary">Driver Assigned Successfully!</h4>
+                <p className="text-xs text-fg-muted mt-1">
+                  Dispatched to <span className="font-semibold text-fg-primary">{assignedSuccess.agentName}</span>
+                </p>
+                {assignedSuccess.otp && (
+                  <div className="mt-3 rounded-lg border border-dashed border-emerald-500/40 bg-surface/80 p-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-fg-muted block">
+                      Delivery Verification OTP
+                    </span>
+                    <span className="font-mono text-2xl font-extrabold tracking-widest text-emerald-400">
+                      {assignedSuccess.otp}
+                    </span>
+                    <p className="text-[10px] text-fg-muted mt-1">
+                      Share this OTP with the customer. The driver must verify this code to complete delivery.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="secondary"
+                size="md"
+                className="w-full"
+                onClick={() => setAssignOpen(false)}
+              >
+                Done
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              {/* Select Fleet Driver */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-fg-secondary">Select Fleet Driver</Label>
+                  <span className="text-[10px] text-fg-muted">
+                    {agents.filter((a) => a.online).length} online
+                  </span>
+                </div>
+                {agents.length === 0 ? (
+                  <div className="rounded-lg border border-border bg-subtle/50 p-2.5 text-xs text-fg-muted">
+                    No drivers registered. Add delivery staff in Setup &gt; Staff.
+                  </div>
+                ) : (
+                  <Select
+                    value={selectedAgentUserId}
+                    onChange={(e) => setSelectedAgentUserId(e.target.value)}
+                    className="h-9 text-xs"
+                  >
+                    {agents.map((agent) => (
+                      <option key={agent.id} value={agent.userId}>
+                        {agent.email ?? agent.userId.slice(0, 8)} {agent.online ? "🟢 (Online)" : "⚪ (Offline)"}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </div>
+
+              {/* Customer Details */}
+              <div className="space-y-3 rounded-xl border border-border/70 bg-surface/60 p-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-fg-muted block">
+                  Delivery Destination
+                </span>
+                <div className="space-y-1">
+                  <Label className="text-xs text-fg-secondary">Delivery Address *</Label>
+                  <Input
+                    placeholder="e.g. Flat 302, Green Avenue, Main Road"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="h-8 text-xs"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-fg-secondary">Customer Name</Label>
+                    <Input
+                      placeholder="e.g. John Doe"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-fg-secondary">Phone Number</Label>
+                    <Input
+                      placeholder="e.g. 9876543210"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                {order && order.balanceMinor > 0 && (
+                  <div className="flex justify-between items-center rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 text-xs">
+                    <span className="text-amber-400 font-medium">Cash On Delivery (COD):</span>
+                    <span className="font-mono font-bold text-amber-300">
+                      {formatPaise(order.balanceMinor)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  className="flex-1"
+                  onClick={() => setAssignOpen(false)}
+                  disabled={assigningDriver}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="gradient"
+                  size="md"
+                  className="flex-1 shadow-md shadow-blue-500/20 bg-blue-600 hover:bg-blue-500"
+                  onClick={() => void assignDriver()}
+                  disabled={assigningDriver || !customerAddress.trim() || !selectedAgentUserId}
+                >
+                  <Navigation className="size-3.5" />
+                  {assigningDriver ? "Dispatching..." : "Confirm & Dispatch"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

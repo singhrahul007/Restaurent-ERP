@@ -30,6 +30,7 @@ import { deliveryRoutes } from "./modules/delivery/delivery.routes.js";
 import { expenseRoutes } from "./modules/expenses/expenses.routes.js";
 import { reportRoutes } from "./modules/reports/reports.routes.js";
 import { integrationRoutes } from "./modules/integrations/integrations.routes.js";
+import { ondcRoutes } from "./modules/ondc/ondc.routes.js";
 import { staffRoutes } from "./modules/staff/staff.routes.js";
 import { createShiftRoutes } from "./modules/shifts/shifts.routes.js";
 import { createShiftService } from "./modules/shifts/shifts.service.js";
@@ -104,6 +105,8 @@ export async function buildApp(options: BuildAppOptions) {
         { name: "delivery", description: "Agents, jobs, OTP, and COD" },
         { name: "reports", description: "Sales, inventory, expenses, and operations" },
         { name: "integrations", description: "Accounts, webhooks, and partner ingest" },
+        { name: "ondc", description: "ONDC Seller configuration & credentials" },
+        { name: "ondc-protocol", description: "Beckn protocol ingress endpoints" },
         { name: "platform", description: "Platform administration" },
         { name: "system", description: "Health and readiness" },
       ],
@@ -229,6 +232,11 @@ export async function buildApp(options: BuildAppOptions) {
     env: options.env,
   });
   await app.register(integrationRoutes, {
+    prefix: "/api/v1",
+    db: options.db,
+    env: options.env,
+  });
+  await app.register(ondcRoutes, {
     prefix: "/api/v1",
     db: options.db,
     env: options.env,
