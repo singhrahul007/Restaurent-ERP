@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "../../lib/api";
 import { SessionGate } from "../../lib/session-gate";
+import { UserMenu } from "../../components/user-menu";
 
 type Category = { id: string; name: string; parentId: string | null };
 type MenuItem = {
@@ -457,6 +458,7 @@ function PosContent() {
               ))}
             </Select>
           )}
+          <UserMenu />
         </div>
       </header>
 

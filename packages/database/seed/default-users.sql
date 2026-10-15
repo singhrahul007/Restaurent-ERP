@@ -36,15 +36,15 @@ BEGIN
   ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE'
   RETURNING id INTO v_owner_id;
 
-  -- 3. cook@restaurant.com
+  -- 3. cook@restaurant.com (password: cook1234)
   INSERT INTO users (email, password_hash, status, is_platform_admin)
-  VALUES ('cook@restaurant.com', '$argon2id$v=19$m=19456,t=2,p=1$jh0WL/0etRMm/zbJrehjng$CfYuuveED0Klud6n+L9Cg5g7qD0OfvdMwJ+n2rgJC9w', 'ACTIVE', false)
+  VALUES ('cook@restaurant.com', '$argon2id$v=19$m=19456,t=2,p=1$6rvTdLPSXhUgbqztwrLy/w$3r6q5/hzkLY1XiWk+gGl8ivTBLJSjq4ZHO9mwj55Xmw', 'ACTIVE', false)
   ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE'
   RETURNING id INTO v_cook_id;
 
-  -- 4. waiter@restaurant.com
+  -- 4. waiter@restaurant.com (password: waiter1234)
   INSERT INTO users (email, password_hash, status, is_platform_admin)
-  VALUES ('waiter@restaurant.com', '$argon2id$v=19$m=19456,t=2,p=1$Jlr+283o5VNPGpehcriErQ$GvmNWl94pXDRdD47D0TNcFpXfNgGZk6754n5zGqD3Uo', 'ACTIVE', false)
+  VALUES ('waiter@restaurant.com', '$argon2id$v=19$m=19456,t=2,p=1$quyhp8EsHdj7YroV5p3xVQ$7QNWpo4Yv5Y7ZcKiXeGio3SiD1WPMZ+d+Dq9DSaRVy0', 'ACTIVE', false)
   ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE'
   RETURNING id INTO v_waiter_id;
 
@@ -81,3 +81,4 @@ BEGIN
     INSERT INTO membership_roles (membership_id, role_id) VALUES (v_m_waiter_id, v_role_receptionist_id) ON CONFLICT DO NOTHING;
   END IF;
 END $$;
+

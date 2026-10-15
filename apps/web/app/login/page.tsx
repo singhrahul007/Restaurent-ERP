@@ -122,13 +122,13 @@ export default function LoginPage() {
               {
                 role: "Cook",
                 email: "cook@restaurant.com",
-                pass: "cook123",
+                pass: "cook1234",
                 badge: "Kitchen Lead",
               },
               {
                 role: "Waiter",
                 email: "waiter@restaurant.com",
-                pass: "waiter123",
+                pass: "waiter1234",
                 badge: "Front-of-House",
               },
             ].map((account) => (
