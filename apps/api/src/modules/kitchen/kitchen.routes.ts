@@ -1,7 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { ApiEnv } from "@niva/config";
 import type { Database } from "@niva/database";
-import { patchKitchenItemBodySchema } from "@niva/validation";
+import {
+  createKitchenStationBodySchema,
+  patchKitchenItemBodySchema,
+} from "@niva/validation";
 import { requirePermission } from "../../lib/authorize.js";
 import { errorEnvelope } from "../../lib/envelope.js";
 import { isAppError } from "../../lib/errors.js";
@@ -37,6 +40,52 @@ export const kitchenRoutes: FastifyPluginAsync<{
   const tenantAuth = [requireAuth, requireTenant];
 
   app.get(
+    "/branches/:branchId/kitchen/stations",
+    {
+      schema: { tags: ["kitchen"] },
+      preHandler: [...tenantAuth, requirePermission("kitchen.view")],
+    },
+    async (request) => {
+      const { branchId } = request.params as { branchId: string };
+      return {
+        success: true,
+        data: await service.listStations(request.tenant!, branchId),
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  app.post(
+    "/restaurants/:restaurantId/branches/:branchId/kitchen/stations",
+    {
+      schema: { tags: ["kitchen"] },
+      preHandler: [...tenantAuth, requirePermission("kitchen.update")],
+    },
+    async (request, reply) => {
+      const parsed = createKitchenStationBodySchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .status(400)
+          .send(errorEnvelope("VALIDATION_ERROR", "Invalid kitchen station payload"));
+      }
+      const { restaurantId, branchId } = request.params as {
+        restaurantId: string;
+        branchId: string;
+      };
+      return {
+        success: true,
+        data: await service.createStation(
+          request.tenant!,
+          restaurantId,
+          branchId,
+          parsed.data,
+        ),
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  app.get(
     "/branches/:branchId/kitchen/tickets",
     {
       schema: { tags: ["kitchen"] },
@@ -68,11 +117,11 @@ export const kitchenRoutes: FastifyPluginAsync<{
       const { id } = request.params as { id: string };
       return {
         success: true,
-        data: await service.updateItemStatus(
+        data: await service.patchItem(
           request.tenant!,
           request.authUser!.id,
           id,
-          parsed.data.status,
+          parsed.data,
         ),
         meta: { requestId: request.id },
       };

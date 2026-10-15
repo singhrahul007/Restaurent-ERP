@@ -126,6 +126,12 @@ export default function LoginPage() {
                 badge: "Kitchen Lead",
               },
               {
+                role: "Driver",
+                email: "driver@restaurant.com",
+                pass: "waiter1234",
+                badge: "Delivery Fleet",
+              },
+              {
                 role: "Waiter",
                 email: "waiter@restaurant.com",
                 pass: "waiter1234",

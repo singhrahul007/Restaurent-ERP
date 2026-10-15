@@ -7,21 +7,32 @@ import {
   AppShell,
   Badge,
   Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   EmptyState,
   ErrorState,
   Input,
+  Label,
   Select,
   Skeleton,
 } from "@niva/ui";
 import {
   ArrowLeft,
+  Bike,
   CheckCircle2,
   Minus,
+  Navigation,
   Plus,
   Printer,
   Search,
   ShoppingBag,
   Trash2,
+  UserCheck,
   UtensilsCrossed,
 } from "lucide-react";
 import { ApiError, api } from "../../lib/api";
@@ -37,6 +48,7 @@ type MenuItem = {
   effectiveAvailable: boolean;
 };
 type Table = { id: string; code: string; status: string };
+type Agent = { id: string; userId: string; email?: string; online: boolean };
 type CartLine = {
   key: string;
   menuItemId: string;
@@ -99,14 +111,24 @@ function PosContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [categoryId, setCategoryId] = useState<string | "all">("all");
   const [query, setQuery] = useState("");
-  const [orderType, setOrderType] = useState<"DINE_IN" | "TAKEAWAY">("DINE_IN");
+  const [orderType, setOrderType] = useState<"DINE_IN" | "TAKEAWAY" | "DELIVERY">("DINE_IN");
   const [tableId, setTableId] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
   const [receipt, setReceipt] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Driver Assignment Modal State
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assigningDriver, setAssigningDriver] = useState(false);
+  const [selectedAgentUserId, setSelectedAgentUserId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [assignedSuccess, setAssignedSuccess] = useState<{ otp?: string; agentName?: string } | null>(null);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -145,14 +167,30 @@ function PosContent() {
         branchId = br.id;
       }
       window.localStorage.setItem("niva_branch_id", branchId);
-      const [cats, menuItems, tableList] = await Promise.all([
+      const [cats, menuItems, tableList, agentsData, staffData] = await Promise.all([
         api<{ categories: Category[] }>(`/restaurants/${restaurantId}/menu/categories`),
         api<{ items: MenuItem[] }>(`/restaurants/${restaurantId}/menu?branchId=${branchId}`),
         api<{ tables: Table[] }>(`/branches/${branchId}/tables`),
+        api<{ agents: Agent[] }>("/delivery/agents").catch(() => ({ agents: [] })),
+        api<{ staff: Array<{ userId: string; userEmail: string }> }>(
+          `/restaurants/${restaurantId}/staff`,
+        ).catch(() => ({ staff: [] })),
       ]);
       setCategories(cats.categories);
       setItems(menuItems.items);
       setTables(tableList.tables);
+
+      const staffMap = new Map(staffData.staff.map((s) => [s.userId, s.userEmail]));
+      const enrichedAgents = agentsData.agents.map((a) => ({
+        ...a,
+        email: staffMap.get(a.userId) ?? (a.userId === "6c8ce217-6a05-44f2-9c8f-0ad2092e1ecb" ? "driver@restaurant.com" : a.userId.slice(0, 8)),
+      }));
+      setAgents(enrichedAgents);
+      if (enrichedAgents.length > 0 && !selectedAgentUserId) {
+        const defaultAgent = enrichedAgents.find((a) => a.online) ?? enrichedAgents[0];
+        if (defaultAgent) setSelectedAgentUserId(defaultAgent.userId);
+      }
+
       setTableId(
         tableList.tables.find((row) => row.status === "VACANT" || row.status === "AVAILABLE")?.id ??
           tableList.tables[0]?.id ??
@@ -262,11 +300,45 @@ function PosContent() {
       });
       setOrder(created);
       setCart([]);
+      if (orderType === "DELIVERY") {
+        setAssignOpen(true);
+      }
       await load();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Could not create order");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function assignDriver() {
+    if (!order || !selectedAgentUserId || !customerAddress.trim()) {
+      return;
+    }
+    setAssigningDriver(true);
+    setError("");
+    try {
+      const resp = await api<{ id: string; otp?: string }>(`/deliveries`, {
+        method: "POST",
+        body: JSON.stringify({
+          orderId: order.id,
+          agentUserId: selectedAgentUserId,
+          addressLine: customerAddress.trim(),
+          phone: customerPhone.trim() || undefined,
+          customerName: customerName.trim() || undefined,
+          codAmountMinor: order.balanceMinor > 0 ? order.balanceMinor : undefined,
+        }),
+      });
+
+      const assignedAgent = agents.find((a) => a.userId === selectedAgentUserId);
+      setAssignedSuccess({
+        otp: resp.otp,
+        agentName: assignedAgent?.email ?? "Driver",
+      });
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Failed to assign driver");
+    } finally {
+      setAssigningDriver(false);
     }
   }
 

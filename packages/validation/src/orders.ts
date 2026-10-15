@@ -76,8 +76,19 @@ export type CreatePaymentBody = z.infer<typeof createPaymentBodySchema>;
 export type CreateRefundBody = z.infer<typeof createRefundBodySchema>;
 
 export const patchKitchenItemBodySchema = z.object({
-  status: z.enum(["PENDING", "IN_PROGRESS", "READY"]),
+  status: z.enum(["PENDING", "IN_PROGRESS", "READY"]).optional(),
+  assignedCookId: z.string().uuid().nullable().optional(),
+  kitchenStationId: z.string().uuid().nullable().optional(),
 });
 
 export type PatchKitchenItemBody = z.infer<typeof patchKitchenItemBodySchema>;
+
+export const createKitchenStationBodySchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  code: z.string().trim().min(1).max(32),
+  colorHex: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/).default("#f59e0b"),
+  sortOrder: z.number().int().default(0),
+});
+
+export type CreateKitchenStationBody = z.infer<typeof createKitchenStationBodySchema>;
 

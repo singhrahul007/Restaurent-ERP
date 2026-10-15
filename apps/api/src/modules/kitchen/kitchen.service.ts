@@ -89,13 +89,17 @@ export function createKitchenService(kitchen: KitchenRepository, orders: OrderRe
       };
     },
 
-    async updateItemStatus(
+    async patchItem(
       tenant: TenantContext,
       actorId: string,
       itemId: string,
-      status: string,
+      patch: {
+        status?: string;
+        assignedCookId?: string | null;
+        kitchenStationId?: string | null;
+      },
     ) {
-      if (!ITEM_STATUSES.includes(status as ItemStatus)) {
+      if (patch.status && !ITEM_STATUSES.includes(patch.status as ItemStatus)) {
         throw new AppError("VALIDATION_ERROR", "Invalid kitchen item status", 400);
       }
       const item = await kitchen.findItem(tenant.organizationId, itemId);
@@ -110,7 +114,30 @@ export function createKitchenService(kitchen: KitchenRepository, orders: OrderRe
       if (ticket.status === "CANCELLED") {
         throw new AppError("INVALID_STATE_TRANSITION", "Ticket is cancelled", 409);
       }
-      await kitchen.setItemStatus(tenant.organizationId, itemId, status as ItemStatus);
+
+      const updates: {
+        status?: ItemStatus;
+        assignedCookId?: string | null;
+        kitchenStationId?: string | null;
+        claimedAt?: Date | null;
+      } = {};
+
+      if (patch.status !== undefined) {
+        updates.status = patch.status as ItemStatus;
+      }
+      if (patch.assignedCookId !== undefined) {
+        updates.assignedCookId = patch.assignedCookId;
+        updates.claimedAt = patch.assignedCookId ? new Date() : null;
+        // If claiming and still PENDING, automatically move to IN_PROGRESS
+        if (patch.assignedCookId && (!patch.status || patch.status === "PENDING") && item.status === "PENDING") {
+          updates.status = "IN_PROGRESS";
+        }
+      }
+      if (patch.kitchenStationId !== undefined) {
+        updates.kitchenStationId = patch.kitchenStationId;
+      }
+
+      await kitchen.updateItem(tenant.organizationId, itemId, updates);
       const updated = await refreshTicketStatus(tenant, ticket.id);
       if (updated?.status === "READY") {
         await syncOrderReady(tenant, actorId, ticket.orderId);
@@ -121,7 +148,32 @@ export function createKitchenService(kitchen: KitchenRepository, orders: OrderRe
       }
       const publicTicket = await assembleTicket(tenant, latest);
       emitKitchen(latest.branchId, "kitchen.ticket.updated", publicTicket);
+      emitKitchen(latest.branchId, "kitchen:ticket_updated", publicTicket);
       return publicTicket;
+    },
+
+    async updateItemStatus(
+      tenant: TenantContext,
+      actorId: string,
+      itemId: string,
+      status: string,
+    ) {
+      return this.patchItem(tenant, actorId, itemId, { status });
+    },
+
+    async listStations(tenant: TenantContext, branchId: string) {
+      assertBranch(tenant, branchId);
+      return kitchen.listStations(tenant.organizationId, branchId);
+    },
+
+    async createStation(
+      tenant: TenantContext,
+      restaurantId: string,
+      branchId: string,
+      input: { name: string; code: string; colorHex?: string; sortOrder?: number },
+    ) {
+      assertBranch(tenant, branchId);
+      return kitchen.createStation(tenant.organizationId, restaurantId, branchId, input);
     },
 
     async bumpTicket(tenant: TenantContext, actorId: string, ticketId: string) {
@@ -136,7 +188,10 @@ export function createKitchenService(kitchen: KitchenRepository, orders: OrderRe
       const items = await kitchen.listItems(tenant.organizationId, [ticketId]);
       for (const item of items) {
         if (item.status !== "READY") {
-          await kitchen.setItemStatus(tenant.organizationId, item.id, "READY");
+          await kitchen.updateItem(tenant.organizationId, item.id, {
+            status: "READY",
+            assignedCookId: item.assignedCookId ?? actorId,
+          });
         }
       }
       const updated = await kitchen.setTicketStatus(tenant.organizationId, ticketId, "READY");
@@ -146,6 +201,7 @@ export function createKitchenService(kitchen: KitchenRepository, orders: OrderRe
       await syncOrderReady(tenant, actorId, ticket.orderId);
       const publicTicket = await assembleTicket(tenant, updated);
       emitKitchen(updated.branchId, "kitchen.ticket.updated", publicTicket);
+      emitKitchen(updated.branchId, "kitchen:ticket_updated", publicTicket);
       return publicTicket;
     },
   };

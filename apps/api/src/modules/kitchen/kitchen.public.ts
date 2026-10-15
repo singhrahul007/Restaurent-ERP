@@ -5,6 +5,10 @@ export type PublicKitchenItem = {
   qty: number;
   modifiers: string[];
   status: string;
+  kitchenStationId?: string | null;
+  assignedCookId?: string | null;
+  assignedCookName?: string | null;
+  claimedAt?: Date | null;
 };
 
 export type PublicKitchenTicket = {
@@ -50,6 +54,10 @@ export function toPublicKitchenTicket(
     qty: number;
     modifiersJson: string;
     status: string;
+    kitchenStationId?: string | null;
+    assignedCookId?: string | null;
+    assignedCookName?: string | null;
+    claimedAt?: Date | null;
   }>,
 ): PublicKitchenTicket {
   return {
@@ -69,6 +77,10 @@ export function toPublicKitchenTicket(
         qty: item.qty,
         modifiers: parseModifierNames(item.modifiersJson),
         status: item.status,
+        kitchenStationId: item.kitchenStationId ?? null,
+        assignedCookId: item.assignedCookId ?? null,
+        assignedCookName: item.assignedCookName ?? null,
+        claimedAt: item.claimedAt ?? null,
       })),
   };
 }

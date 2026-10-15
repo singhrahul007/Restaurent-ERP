@@ -25,3 +25,13 @@ export type {
   NormalizedPartnerOrder,
 } from "./food-delivery.js";
 export type { NotificationJob, NotificationPorts } from "./notifications.js";
+export type {
+  BecknAck,
+  BecknAction,
+  BecknAuthHeaderComponents,
+  BecknContext,
+  BecknDomain,
+  BecknError,
+  BecknResponse,
+  OndcProviderConfig,
+} from "./ondc.js";

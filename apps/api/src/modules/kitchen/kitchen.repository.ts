@@ -1,11 +1,13 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   diningTables,
+  kitchenStations,
   kitchenTicketItems,
   kitchenTickets,
   orderItemModifiers,
   orderItems,
   orders,
+  users,
   withOrganizationScope,
   type Database,
 } from "@niva/database";
@@ -191,8 +193,13 @@ export function createKitchenRepository(db: Database) {
             qty: kitchenTicketItems.qty,
             modifiersJson: kitchenTicketItems.modifiersJson,
             status: kitchenTicketItems.status,
+            kitchenStationId: kitchenTicketItems.kitchenStationId,
+            assignedCookId: kitchenTicketItems.assignedCookId,
+            assignedCookName: users.email,
+            claimedAt: kitchenTicketItems.claimedAt,
           })
           .from(kitchenTicketItems)
+          .leftJoin(users, eq(kitchenTicketItems.assignedCookId, users.id))
           .where(
             and(
               eq(kitchenTicketItems.organizationId, organizationId),
@@ -209,6 +216,8 @@ export function createKitchenRepository(db: Database) {
             id: kitchenTicketItems.id,
             ticketId: kitchenTicketItems.ticketId,
             status: kitchenTicketItems.status,
+            assignedCookId: kitchenTicketItems.assignedCookId,
+            kitchenStationId: kitchenTicketItems.kitchenStationId,
           })
           .from(kitchenTicketItems)
           .where(
@@ -218,6 +227,38 @@ export function createKitchenRepository(db: Database) {
             ),
           )
           .limit(1);
+        return row ?? null;
+      });
+    },
+
+    updateItem(
+      organizationId: string,
+      id: string,
+      patch: {
+        status?: "PENDING" | "IN_PROGRESS" | "READY";
+        assignedCookId?: string | null;
+        kitchenStationId?: string | null;
+        claimedAt?: Date | null;
+      },
+    ) {
+      return withOrganizationScope(db, organizationId, async (tx) => {
+        const [row] = await tx
+          .update(kitchenTicketItems)
+          .set(patch)
+          .where(
+            and(
+              eq(kitchenTicketItems.id, id),
+              eq(kitchenTicketItems.organizationId, organizationId),
+            ),
+          )
+          .returning({
+            id: kitchenTicketItems.id,
+            ticketId: kitchenTicketItems.ticketId,
+            status: kitchenTicketItems.status,
+            assignedCookId: kitchenTicketItems.assignedCookId,
+            kitchenStationId: kitchenTicketItems.kitchenStationId,
+            claimedAt: kitchenTicketItems.claimedAt,
+          });
         return row ?? null;
       });
     },
@@ -235,6 +276,44 @@ export function createKitchenRepository(db: Database) {
           )
           .returning({ id: kitchenTicketItems.id, ticketId: kitchenTicketItems.ticketId });
         return row ?? null;
+      });
+    },
+
+    listStations(organizationId: string, branchId: string) {
+      return withOrganizationScope(db, organizationId, async (tx) =>
+        tx
+          .select()
+          .from(kitchenStations)
+          .where(
+            and(
+              eq(kitchenStations.organizationId, organizationId),
+              eq(kitchenStations.branchId, branchId),
+            ),
+          )
+          .orderBy(kitchenStations.sortOrder),
+      );
+    },
+
+    createStation(
+      organizationId: string,
+      restaurantId: string,
+      branchId: string,
+      input: { name: string; code: string; colorHex?: string; sortOrder?: number },
+    ) {
+      return withOrganizationScope(db, organizationId, async (tx) => {
+        const [row] = await tx
+          .insert(kitchenStations)
+          .values({
+            organizationId,
+            restaurantId,
+            branchId,
+            name: input.name,
+            code: input.code,
+            colorHex: input.colorHex ?? "#f59e0b",
+            sortOrder: input.sortOrder ?? 0,
+          })
+          .returning();
+        return row;
       });
     },
 
