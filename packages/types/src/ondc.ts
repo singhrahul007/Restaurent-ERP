@@ -182,3 +182,130 @@ export interface BecknOnSearchPayload {
   };
 }
 
+export interface BecknQuoteBreakupItem {
+  "@ondc/org/item_id": string;
+  "@ondc/org/item_quantity"?: {
+    count: number;
+  };
+  title: string;
+  "@ondc/org/title_type": "item" | "delivery" | "packing" | "tax" | "discount" | "misc";
+  price: BecknPrice;
+  item?: {
+    price: BecknPrice;
+  };
+}
+
+export interface BecknQuote {
+  price: BecknPrice;
+  breakup: BecknQuoteBreakupItem[];
+  ttl?: string;
+}
+
+export interface BecknBilling {
+  name: string;
+  phone: string;
+  email?: string;
+  address?: {
+    door?: string;
+    name?: string;
+    building?: string;
+    street?: string;
+    locality?: string;
+    ward?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    area_code?: string;
+  };
+  tax_number?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BecknFulfillment {
+  id: string;
+  type: string;
+  tracking?: boolean;
+  end?: {
+    location?: BecknLocation;
+    contact?: {
+      phone: string;
+      email?: string;
+    };
+  };
+}
+
+export interface BecknOrderPayment {
+  uri?: string;
+  tl_method?: string;
+  params?: Record<string, string>;
+  type: "ON-ORDER" | "PRE-FULFILLMENT" | "ON-FULFILLMENT" | "POST-FULFILLMENT";
+  status: "PAID" | "NOT-PAID";
+  collected_by: "BAP" | "BPP";
+  "@ondc/org/buyer_app_finder_fee_type"?: string;
+  "@ondc/org/buyer_app_finder_fee_amount"?: string;
+}
+
+export interface BecknOrder {
+  id?: string;
+  state?: string;
+  provider?: {
+    id: string;
+    locations?: Array<{ id: string }>;
+  };
+  items: Array<{
+    id: string;
+    quantity: {
+      count: number;
+    };
+    parent_item_id?: string;
+    fulfillment_id?: string;
+  }>;
+  billing?: BecknBilling;
+  fulfillments?: BecknFulfillment[];
+  quote?: BecknQuote;
+  payment?: BecknOrderPayment;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BecknOnSelectPayload {
+  context: BecknContext;
+  message: {
+    order: {
+      provider: {
+        id: string;
+      };
+      items: BecknOrder["items"];
+      quote: BecknQuote;
+      fulfillments?: BecknFulfillment[];
+    };
+  };
+}
+
+export interface BecknOnInitPayload {
+  context: BecknContext;
+  message: {
+    order: {
+      provider: {
+        id: string;
+      };
+      provider_location?: {
+        id: string;
+      };
+      items: BecknOrder["items"];
+      billing: BecknBilling;
+      fulfillments: BecknFulfillment[];
+      quote: BecknQuote;
+      payment?: BecknOrderPayment;
+    };
+  };
+}
+
+export interface BecknOnConfirmPayload {
+  context: BecknContext;
+  message: {
+    order: BecknOrder;
+  };
+}
+

@@ -1,8 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { ApiEnv } from "@niva/config";
 import type { Database } from "@niva/database";
-import { becknContextSchema, ondcSellerConfigSchema } from "@niva/validation";
-import { z } from "zod";
+import { becknProtocolBodySchema, ondcSellerConfigSchema } from "@niva/validation";
 import { requirePermission } from "../../lib/authorize.js";
 import { errorEnvelope } from "../../lib/envelope.js";
 import { isAppError } from "../../lib/errors.js";
@@ -10,6 +9,11 @@ import { createRequireAuth } from "../auth/auth.middleware.js";
 import { createAuthRepository } from "../auth/auth.repository.js";
 import { createTenancyRepository } from "../tenancy/tenancy.repository.js";
 import { createRequireTenant } from "../../lib/tenant-context.js";
+import { createKitchenRepository } from "../kitchen/kitchen.repository.js";
+import { createPaymentRepository } from "../payments/payments.repository.js";
+import { createOrderRepository } from "../orders/orders.repository.js";
+import { createOrderService } from "../orders/orders.service.js";
+import { createPaymentGateway } from "@niva/integrations";
 import { createMenuRepository } from "../menu/menu.repository.js";
 import { createRestaurantRepository } from "../restaurants/restaurants.repository.js";
 import { createOndcRepository } from "./ondc.repository.js";
@@ -18,11 +22,6 @@ import { createOndcService } from "./ondc.service.js";
 function kekFromEnv(env: ApiEnv): string {
   return env.INTEGRATION_KEK ?? env.JWT_ACCESS_SECRET;
 }
-
-const becknProtocolBodySchema = z.object({
-  context: becknContextSchema,
-  message: z.record(z.string(), z.unknown()).optional(),
-});
 
 export const ondcRoutes: FastifyPluginAsync<{
   db: Database;
@@ -44,7 +43,21 @@ export const ondcRoutes: FastifyPluginAsync<{
   const repo = createOndcRepository(opts.db);
   const menuRepo = createMenuRepository(opts.db);
   const restaurantRepo = createRestaurantRepository(opts.db);
-  const service = createOndcService(repo, kekFromEnv(opts.env), menuRepo, restaurantRepo);
+  const orderService = createOrderService(
+    createOrderRepository(opts.db),
+    createPaymentRepository(opts.db),
+    opts.db,
+    createKitchenRepository(opts.db),
+    createPaymentGateway(),
+  );
+
+  const service = createOndcService(
+    repo,
+    kekFromEnv(opts.env),
+    menuRepo,
+    restaurantRepo,
+    orderService,
+  );
 
   // --- Seller configuration endpoints for Restaurant Portal ---
 
@@ -210,7 +223,39 @@ export const ondcRoutes: FastifyPluginAsync<{
         }
 
         // Return synchronous ACK payload
-        return reply.status(200).send(ackResponse);
+        reply.status(200).send(ackResponse);
+
+        // Process asynchronous workflow for select and confirm actions
+        if (action === "select" && parsed.data.message?.order && sellerConfig) {
+          void service
+            .handleSelect(
+              sellerConfig.organizationId,
+              sellerConfig.restaurantId,
+              context,
+              parsed.data.message.order as any,
+            )
+            .catch((err) => {
+              request.log.error({ err }, "Failed to process asynchronous on_select");
+            });
+        } else if (action === "confirm" && parsed.data.message?.order && sellerConfig) {
+          const tenant = {
+            organizationId: sellerConfig.organizationId,
+            restaurantId: sellerConfig.restaurantId,
+            allowedBranchIds: null,
+          };
+          void service
+            .handleConfirm(
+              tenant as any,
+              "ondc-system",
+              sellerConfig.restaurantId,
+              sellerConfig.branchId,
+              context,
+              parsed.data.message.order as any,
+            )
+            .catch((err) => {
+              request.log.error({ err }, "Failed to process asynchronous on_confirm");
+            });
+        }
       },
     );
   }

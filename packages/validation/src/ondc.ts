@@ -66,7 +66,13 @@ export const ondcSellerConfigSchema = z.object({
   defaultPreparationTimeMinutes: z.number().int().min(1).max(180).default(30),
 });
 
+export const becknProtocolBodySchema = z.object({
+  context: becknContextSchema,
+  message: z.record(z.string(), z.unknown()).optional(),
+});
+
 export type BecknContextSchema = z.infer<typeof becknContextSchema>;
 export type BecknAckResponseSchema = z.infer<typeof becknAckResponseSchema>;
 export type OndcSellerConfig = z.infer<typeof ondcSellerConfigSchema>;
+export type BecknProtocolBody = z.infer<typeof becknProtocolBodySchema>;
 

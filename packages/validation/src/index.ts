@@ -151,9 +151,11 @@ export {
 export {
   becknAckResponseSchema,
   becknContextSchema,
+  becknProtocolBodySchema,
   ondcSellerConfigSchema,
   type BecknAckResponseSchema,
   type BecknContextSchema,
+  type BecknProtocolBody,
   type OndcSellerConfig,
 } from "./ondc.js";
 

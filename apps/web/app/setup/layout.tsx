@@ -60,6 +60,9 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
               <SidebarItem href="/setup/recipes" active={pathname.startsWith("/setup/recipes")}>
                 Recipes
               </SidebarItem>
+              <SidebarItem href="/setup/ondc" active={pathname.startsWith("/setup/ondc")}>
+                ONDC Channel
+              </SidebarItem>
             </Sidebar>
           }
         >

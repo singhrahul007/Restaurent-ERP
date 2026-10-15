@@ -1,22 +1,29 @@
 import {
   buildOndcCatalog,
+  calculateBecknQuote,
   createBecknAuthHeader,
   decryptSecret,
   encryptSecret,
   generateOndcSigningKeyPair,
+  normalizeBecknOrder,
   parseBecknAuthHeader,
   verifyBecknAuthHeader,
 } from "@niva/integrations";
 import type {
   BecknCatalog,
   BecknContext,
+  BecknOnConfirmPayload,
+  BecknOnInitPayload,
   BecknOnSearchPayload,
+  BecknOnSelectPayload,
+  BecknOrder,
   BecknResponse,
 } from "@niva/types";
 import { AppError } from "../../lib/errors.js";
 import type { TenantContext } from "../../lib/tenant-context.js";
 import type { MenuRepository } from "../menu/menu.repository.js";
 import type { RestaurantRepository } from "../restaurants/restaurants.repository.js";
+import type { OrderService } from "../orders/orders.service.js";
 import type { OndcRepository, UpsertOndcSellerConfigInput } from "./ondc.repository.js";
 
 export function createOndcService(
@@ -24,6 +31,7 @@ export function createOndcService(
   kek: string,
   menuRepo?: MenuRepository,
   restaurantRepo?: RestaurantRepository,
+  orders?: OrderService,
 ) {
   return {
     generateKeys() {
@@ -83,6 +91,9 @@ export function createOndcService(
       };
 
       const result = await repo.upsertSellerConfig(payload);
+      if (!result) {
+        throw new AppError("INTERNAL_ERROR", "Failed to upsert ONDC seller configuration", 500);
+      }
       return {
         id: result.id,
         restaurantId: result.restaurantId,
@@ -265,6 +276,145 @@ export function createOndcService(
         context: responseContext,
         message: {
           catalog,
+        },
+      };
+    },
+
+    async handleSelect(
+      organizationId: string,
+      restaurantId: string,
+      context: BecknContext,
+      order: BecknOrder,
+    ): Promise<BecknOnSelectPayload> {
+      if (!menuRepo || !restaurantRepo) {
+        throw new Error("REPOSITORIES_NOT_CONFIGURED");
+      }
+
+      const restaurant = await restaurantRepo.findRestaurant(organizationId, restaurantId);
+      const currency = restaurant?.currency ?? "INR";
+
+      const quoteItems: Array<{
+        id: string;
+        name: string;
+        qty: number;
+        unitPriceMinor: number;
+        taxRateBps: number;
+        taxInclusive: boolean;
+      }> = [];
+
+      for (const reqItem of order.items) {
+        const [menuItemId, variantId] = reqItem.id.split(":");
+        const item = await menuRepo.findItem(organizationId, menuItemId!);
+        if (!item) {
+          throw new AppError("NOT_FOUND", `Item ${reqItem.id} not found`, 404);
+        }
+
+        let unitPriceMinor = item.basePriceMinor;
+        let itemName = item.name;
+
+        if (variantId) {
+          const variant = await menuRepo.findVariant(organizationId, variantId);
+          if (variant) {
+            unitPriceMinor += variant.priceDeltaMinor;
+            itemName = `${item.name} - ${variant.name}`;
+          }
+        }
+
+        const taxClasses = await menuRepo.listTaxClasses(organizationId, restaurantId);
+        const itemTax = taxClasses.find((t) => t.id === item.taxClassId);
+        const rateBps = itemTax?.currentRate?.rateBps ?? 500; // 5% default for F&B in India
+        const inclusive = itemTax?.inclusive ?? false;
+
+        quoteItems.push({
+          id: reqItem.id,
+          name: itemName,
+          qty: reqItem.quantity.count,
+          unitPriceMinor,
+          taxRateBps: rateBps,
+          taxInclusive: inclusive,
+        });
+      }
+
+      const quote = calculateBecknQuote({
+        currency,
+        items: quoteItems,
+        packagingChargeMinor: 2000,
+        deliveryChargeMinor: 4000,
+      });
+
+      return {
+        context: {
+          ...context,
+          action: "on_select",
+          timestamp: new Date().toISOString(),
+        },
+        message: {
+          order: {
+            provider: {
+              id: restaurantId,
+            },
+            items: order.items,
+            quote,
+            fulfillments: order.fulfillments,
+          },
+        },
+      };
+    },
+
+    async handleConfirm(
+      tenant: TenantContext,
+      actorId: string,
+      restaurantId: string,
+      branchId: string,
+      context: BecknContext,
+      becknOrder: BecknOrder,
+    ): Promise<BecknOnConfirmPayload> {
+      if (!orders) {
+        throw new Error("ORDER_SERVICE_NOT_CONFIGURED");
+      }
+
+      const normalized = normalizeBecknOrder(branchId, becknOrder);
+      const ingestedOrder = await orders.ingestPartnerOrder(
+        tenant,
+        actorId,
+        restaurantId,
+        normalized,
+      );
+
+      // Transition order to CONFIRMED / PREPARING so Kitchen Display Station (KDS) receives it
+      const confirmedOrder = await orders.confirm(tenant, actorId, ingestedOrder.id);
+
+      // Audit Beckn transaction
+      await repo.recordTransaction({
+        organizationId: tenant.organizationId,
+        transactionId: context.transaction_id,
+        messageId: context.message_id,
+        action: "confirm",
+        bapId: context.bap_id,
+        bapUri: context.bap_uri,
+        bppId: context.bpp_id,
+        bppUri: context.bpp_uri,
+        orderId: confirmedOrder.id,
+        ondcOrderId: becknOrder.id,
+        status: "ACCEPTED",
+        requestPayload: becknOrder,
+        responsePayload: { orderId: confirmedOrder.id, status: confirmedOrder.status },
+      });
+
+      return {
+        context: {
+          ...context,
+          action: "on_confirm",
+          timestamp: new Date().toISOString(),
+        },
+        message: {
+          order: {
+            ...becknOrder,
+            id: becknOrder.id ?? `ONDC-${confirmedOrder.id.slice(0, 8)}`,
+            state: "Accepted",
+            created_at: confirmedOrder.createdAt.toISOString(),
+            updated_at: confirmedOrder.updatedAt.toISOString(),
+          },
         },
       };
     },

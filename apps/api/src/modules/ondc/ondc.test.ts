@@ -161,5 +161,128 @@ describe("ONDC Service Unit Tests", () => {
     expect(onSearchPayload.context.bpp_id).toBe("seller.niva.app");
     expect(onSearchPayload.message.catalog).toBe(catalog);
   });
+
+  it("handles quotation generation on handleSelect", async () => {
+    const mockMenuRepo = {
+      async findItem() {
+        return {
+          id: "item-101",
+          name: "Paneer Butter Masala",
+          basePriceMinor: 28000,
+          taxClassId: "tax-1",
+        };
+      },
+      async findVariant() {
+        return null;
+      },
+      async listTaxClasses() {
+        return [{ id: "tax-1", inclusive: false, currentRate: { rateBps: 500 } }];
+      },
+    };
+
+    const mockRestaurantRepo = {
+      async findRestaurant() {
+        return { id: "r-1", currency: "INR" };
+      },
+    };
+
+    const service = createOndcService(
+      mockRepo as any,
+      dummyKek,
+      mockMenuRepo as any,
+      mockRestaurantRepo as any,
+    );
+
+    const context = {
+      domain: "ONDC:RET11",
+      country: "IND",
+      city: "std:080",
+      action: "select" as const,
+      core_version: "1.2.0",
+      bap_id: "bap.app",
+      bap_uri: "https://bap.app/ondc",
+      transaction_id: "tx-select-1",
+      message_id: "msg-select-1",
+      timestamp: new Date().toISOString(),
+    };
+
+    const orderReq = {
+      items: [{ id: "item-101", quantity: { count: 2 } }],
+    };
+
+    const onSelect = await service.handleSelect("org-1", "r-1", context, orderReq as any);
+    expect(onSelect.context.action).toBe("on_select");
+    expect(onSelect.message.order.quote.breakup.length).toBeGreaterThanOrEqual(1);
+    expect(onSelect.message.order.quote.price.value).toBeTypeOf("string");
+  });
+
+  it("ingests and confirms order on handleConfirm triggering KDS dispatch", async () => {
+    let ingestedPartnerOrder: any = null;
+    let confirmedOrderId: string | null = null;
+
+    const mockOrderService = {
+      async ingestPartnerOrder(_tenant: any, _actor: string, _restId: string, normalized: any) {
+        ingestedPartnerOrder = normalized;
+        return {
+          id: "niva-ord-1234",
+          status: "CREATED",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      },
+      async confirm(_tenant: any, _actor: string, orderId: string) {
+        confirmedOrderId = orderId;
+        return {
+          id: orderId,
+          status: "PREPARING",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      },
+    };
+
+    const service = createOndcService(
+      mockRepo as any,
+      dummyKek,
+      undefined,
+      undefined,
+      mockOrderService as any,
+    );
+
+    const context = {
+      domain: "ONDC:RET11",
+      country: "IND",
+      city: "std:080",
+      action: "confirm" as const,
+      core_version: "1.2.0",
+      bap_id: "bap.app",
+      bap_uri: "https://bap.app/ondc",
+      transaction_id: "tx-confirm-1",
+      message_id: "msg-confirm-1",
+      timestamp: new Date().toISOString(),
+    };
+
+    const becknOrder = {
+      id: "ONDC-ORD-777",
+      billing: { name: "Ananya", phone: "9876543210" },
+      items: [{ id: "menu-item-55", quantity: { count: 1 } }],
+    };
+
+    const tenant = { organizationId: "org-1", restaurantId: "r-1" } as any;
+
+    const onConfirm = await service.handleConfirm(
+      tenant,
+      "ondc-actor",
+      "r-1",
+      "b-1",
+      context,
+      becknOrder as any,
+    );
+
+    expect(onConfirm.context.action).toBe("on_confirm");
+    expect(onConfirm.message.order.state).toBe("Accepted");
+    expect(ingestedPartnerOrder?.externalId).toBe("ONDC-ORD-777");
+    expect(confirmedOrderId).toBe("niva-ord-1234");
+  });
 });
 
