@@ -99,3 +99,4 @@ export const ondcTransactions = pgTable(
     index("ondc_transactions_ondc_order_id_idx").on(table.ondcOrderId),
   ],
 );
+

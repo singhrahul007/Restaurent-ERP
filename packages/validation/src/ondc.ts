@@ -69,3 +69,4 @@ export const ondcSellerConfigSchema = z.object({
 export type BecknContextSchema = z.infer<typeof becknContextSchema>;
 export type BecknAckResponseSchema = z.infer<typeof becknAckResponseSchema>;
 export type OndcSellerConfig = z.infer<typeof ondcSellerConfigSchema>;
+
