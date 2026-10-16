@@ -27,6 +27,7 @@ export function createReservationService(reservations: ReservationRepository) {
         partySize: number;
         reservationTime: string;
         tableId?: string | null;
+        status?: "CONFIRMED" | "WAITLISTED" | "SEATED" | "CANCELLED" | "NO_SHOW";
         specialRequests?: string;
       },
     ) {
@@ -41,6 +42,7 @@ export function createReservationService(reservations: ReservationRepository) {
         partySize: input.partySize,
         reservationTime: new Date(input.reservationTime),
         tableId: input.tableId,
+        status: input.status,
         specialRequests: input.specialRequests,
       });
     },

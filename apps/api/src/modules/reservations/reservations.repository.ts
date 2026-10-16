@@ -70,6 +70,7 @@ export function createReservationRepository(db: Database) {
       partySize: number;
       reservationTime: Date;
       tableId?: string | null;
+      status?: "CONFIRMED" | "WAITLISTED" | "SEATED" | "CANCELLED" | "NO_SHOW";
       specialRequests?: string;
     }) {
       return withOrganizationScope(db, input.organizationId, async (tx) => {
@@ -83,6 +84,7 @@ export function createReservationRepository(db: Database) {
             partySize: input.partySize,
             reservationTime: input.reservationTime,
             tableId: input.tableId,
+            status: input.status ?? "CONFIRMED",
             specialRequests: input.specialRequests,
           })
           .returning();

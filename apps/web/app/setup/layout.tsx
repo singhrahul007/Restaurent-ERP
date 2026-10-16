@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { AppFrame, AppShell, Sidebar, SidebarItem, Topbar } from "@niva/ui";
+import { Home } from "lucide-react";
 import { UserMenu, SidebarUserFooter } from "../../components/user-menu";
 import { SessionGate } from "../../lib/session-gate";
 
@@ -27,12 +28,28 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
                   <span className="font-display text-base font-bold tracking-tight">MR.Genious</span>
                 </Link>
               }
-              start={<span className="text-sm font-medium text-fg-muted">Setup & Settings</span>}
+              start={
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/"
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-fg-secondary hover:text-fg-primary transition-colors"
+                  >
+                    <Home className="size-3.5" />
+                    Hub
+                  </Link>
+                  <span className="text-sm font-medium text-fg-muted">Setup & Settings</span>
+                </div>
+              }
               end={<UserMenu />}
             />
           }
           sidebar={
             <Sidebar footer={<SidebarUserFooter />}>
+              <Link href="/">
+                <SidebarItem active={pathname === "/"}>
+                  Home Hub
+                </SidebarItem>
+              </Link>
               <Link href="/dashboard">
                 <SidebarItem active={pathname === "/dashboard"}>
                   Dashboard

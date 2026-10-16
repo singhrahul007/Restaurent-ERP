@@ -146,7 +146,7 @@ describe.skipIf(!hasDatabase)("shifts and reservations", () => {
       },
     });
     expect(createRes.statusCode).toBe(201);
-    const reservation = JSON.parse(createRes.body).reservation;
+    const reservation = JSON.parse(createRes.body).data.reservation;
     expect(reservation.guestName).toBe("Vikram Malhotra");
     expect(reservation.status).toBe("CONFIRMED");
 
@@ -156,7 +156,7 @@ describe.skipIf(!hasDatabase)("shifts and reservations", () => {
       headers: { cookie: authCookies, "x-organization-id": orgId },
     });
     expect(listRes.statusCode).toBe(200);
-    expect(JSON.parse(listRes.body).reservations.length).toBeGreaterThanOrEqual(1);
+    expect(JSON.parse(listRes.body).data.reservations.length).toBeGreaterThanOrEqual(1);
 
     const patchRes = await app.inject({
       method: "PATCH",
@@ -167,7 +167,7 @@ describe.skipIf(!hasDatabase)("shifts and reservations", () => {
       },
     });
     expect(patchRes.statusCode).toBe(200);
-    expect(JSON.parse(patchRes.body).reservation.status).toBe("SEATED");
+    expect(JSON.parse(patchRes.body).data.reservation.status).toBe("SEATED");
 
     // 5. Test QSR Token Calling Screen endpoint
     const tokensRes = await app.inject({

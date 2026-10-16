@@ -282,7 +282,7 @@ export default function OndcSetupPage() {
                 Configure the Beckn protocol credentials registered with the ONDC registry
               </CardDescription>
             </div>
-            <Badge variant={config.enabled ? "success" : "neutral"}>
+            <Badge variant={config.enabled ? "success" : "default"}>
               {config.enabled ? "Active Seller Node" : "Disabled"}
             </Badge>
           </div>
@@ -290,8 +290,9 @@ export default function OndcSetupPage() {
 
         <form onSubmit={handleSaveConfig} className="space-y-4 p-6 pt-0">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Subscriber ID (BPP ID)">
+            <FormField id="subscriber-id" label="Subscriber ID (BPP ID)">
               <Input
+                id="subscriber-id"
                 value={config.subscriberId}
                 onChange={(e) => setConfig({ ...config, subscriberId: e.target.value })}
                 placeholder="e.g. seller.niva.app"
@@ -299,8 +300,9 @@ export default function OndcSetupPage() {
               />
             </FormField>
 
-            <FormField label="Subscriber URL (BPP URI)">
+            <FormField id="subscriber-url" label="Subscriber URL (BPP URI)">
               <Input
+                id="subscriber-url"
                 value={config.subscriberUrl}
                 onChange={(e) => setConfig({ ...config, subscriberUrl: e.target.value })}
                 placeholder="https://api.yourdomain.com/api/v1/ondc"
@@ -308,8 +310,9 @@ export default function OndcSetupPage() {
               />
             </FormField>
 
-            <FormField label="Unique Key ID">
+            <FormField id="unique-key-id" label="Unique Key ID">
               <Input
+                id="unique-key-id"
                 value={config.uniqueKeyId}
                 onChange={(e) => setConfig({ ...config, uniqueKeyId: e.target.value })}
                 placeholder="key-1"
@@ -317,8 +320,9 @@ export default function OndcSetupPage() {
               />
             </FormField>
 
-            <FormField label="Gateway URL">
+            <FormField id="gateway-url" label="Gateway URL">
               <Input
+                id="gateway-url"
                 value={config.gatewayUrl}
                 onChange={(e) => setConfig({ ...config, gatewayUrl: e.target.value })}
                 placeholder="https://staging.gateway.ondc.org"
@@ -339,8 +343,9 @@ export default function OndcSetupPage() {
               </Button>
             </div>
 
-            <FormField label="Public Key (Base64)">
+            <FormField id="signing-public-key" label="Public Key (Base64)">
               <Input
+                id="signing-public-key"
                 value={config.signingPublicKey}
                 onChange={(e) => setConfig({ ...config, signingPublicKey: e.target.value })}
                 placeholder="Ed25519 Public Key"
@@ -348,8 +353,9 @@ export default function OndcSetupPage() {
               />
             </FormField>
 
-            <FormField label="Private Key (Base64)">
+            <FormField id="signing-private-key" label="Private Key (Base64)">
               <Input
+                id="signing-private-key"
                 type="password"
                 value={config.signingPrivateKey}
                 onChange={(e) => setConfig({ ...config, signingPrivateKey: e.target.value })}

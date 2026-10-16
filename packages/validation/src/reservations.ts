@@ -7,6 +7,7 @@ export const createReservationBodySchema = z.object({
   partySize: z.number().int().min(1).max(100).default(2),
   reservationTime: z.string().datetime(),
   tableId: z.string().uuid().optional(),
+  status: z.enum(["CONFIRMED", "WAITLISTED", "SEATED", "CANCELLED", "NO_SHOW"]).optional(),
   specialRequests: z.string().max(500).optional(),
 });
 

@@ -15,7 +15,7 @@ export function createReservationRoutes(reservations: ReservationService): Fasti
           req.query.from,
           req.query.to,
         );
-        return { reservations: list };
+        return { success: true, data: { reservations: list }, meta: { requestId: req.id } };
       },
     );
 
@@ -26,7 +26,7 @@ export function createReservationRoutes(reservations: ReservationService): Fasti
         const body = createReservationBodySchema.parse(req.body);
         const created = await reservations.createReservation(req.tenant!, body);
         reply.code(201);
-        return { reservation: created };
+        return { success: true, data: { reservation: created }, meta: { requestId: req.id } };
       },
     );
 
@@ -36,7 +36,7 @@ export function createReservationRoutes(reservations: ReservationService): Fasti
       async (req) => {
         const body = patchReservationBodySchema.parse(req.body);
         const updated = await reservations.patchReservation(req.tenant!, req.params.id, body);
-        return { reservation: updated };
+        return { success: true, data: { reservation: updated }, meta: { requestId: req.id } };
       },
     );
   };
