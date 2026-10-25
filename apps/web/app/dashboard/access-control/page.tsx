@@ -35,6 +35,7 @@ import {
   Eye,
 } from "lucide-react";
 import { api } from "../../../lib/api";
+import { SessionGate } from "../../../lib/session-gate";
 
 type RoleItem = {
   id: string;
@@ -146,6 +147,14 @@ const PERMISSION_GROUPS: Record<
 };
 
 export default function AccessControlStudioPage() {
+  return (
+    <SessionGate requirePlatformAdmin>
+      <AccessControlStudioContent />
+    </SessionGate>
+  );
+}
+
+function AccessControlStudioContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"roles" | "assignments" | "preview">("roles");

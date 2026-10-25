@@ -5,21 +5,32 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { AppShell, Button, ErrorState } from "@niva/ui";
 import { ApiError } from "./api";
-import { hasCachedSession, isUnauthorized, loadSession } from "./session";
+import {
+  getCachedMe,
+  hasAnyPermission,
+  hasPermission,
+  isPlatformAdmin,
+  isUnauthorized,
+  loadSession,
+  type Me,
+} from "./session";
+import { AccessDeniedView } from "./permissions";
 
 export function useSessionGate() {
   const router = useRouter();
-  const [ready, setReady] = useState(hasCachedSession);
+  const [ready, setReady] = useState(() => Boolean(getCachedMe()));
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [me, setMe] = useState<Me | null>(getCachedMe);
 
   const check = useCallback(() => {
     setError(null);
     let cancelled = false;
 
     loadSession()
-      .then(() => {
+      .then((session) => {
         if (!cancelled) {
+          setMe(session);
           setReady(true);
         }
       })
@@ -46,7 +57,7 @@ export function useSessionGate() {
     return check();
   }, [check]);
 
-  return { ready, error, isRedirecting, retry: check };
+  return { ready, error, isRedirecting, retry: check, me };
 }
 
 export function useRequireSession() {
@@ -54,8 +65,23 @@ export function useRequireSession() {
   return ready;
 }
 
-export function SessionGate({ children }: { children: ReactNode }) {
-  const { ready, error, isRedirecting, retry } = useSessionGate();
+export interface SessionGateProps {
+  children: ReactNode;
+  /** Require a specific permission to view this route/layout */
+  requiredPermission?: string;
+  /** Require at least one of these permissions */
+  requiredAnyPermissions?: string[];
+  /** Require Master/Platform Admin */
+  requirePlatformAdmin?: boolean;
+}
+
+export function SessionGate({
+  children,
+  requiredPermission,
+  requiredAnyPermissions,
+  requirePlatformAdmin: needsPlatformAdmin,
+}: SessionGateProps) {
+  const { ready, error, isRedirecting, retry, me } = useSessionGate();
 
   if (isRedirecting) {
     return (
@@ -84,17 +110,52 @@ export function SessionGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!ready) {
+  if (!ready || !me) {
     return (
       <AppShell>
-        <div className="flex items-center gap-2 p-6 text-sm text-fg-muted">
-          <span className="inline-block size-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          <span>Loading…</span>
+        <div className="flex items-center justify-center min-h-[50vh] gap-2.5 p-6 text-sm text-fg-muted">
+          <span className="inline-block size-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <span>Verifying access…</span>
         </div>
       </AppShell>
     );
   }
 
-  return children;
-}
+  // Permission guard
+  if (needsPlatformAdmin && !isPlatformAdmin()) {
+    return (
+      <AppShell>
+        <AccessDeniedView
+          title="Master Admin Required"
+          description="This section is restricted to Platform / Master Administrators."
+        />
+      </AppShell>
+    );
+  }
 
+  if (requiredPermission && !hasPermission(requiredPermission)) {
+    return (
+      <AppShell>
+        <AccessDeniedView requiredPermission={requiredPermission} />
+      </AppShell>
+    );
+  }
+
+  if (
+    requiredAnyPermissions &&
+    requiredAnyPermissions.length > 0 &&
+    !hasAnyPermission(requiredAnyPermissions)
+  ) {
+    return (
+      <AppShell>
+        <AccessDeniedView
+          description={`You do not have any of the required permissions (${requiredAnyPermissions.join(
+            ", ",
+          )}) to access this screen.`}
+        />
+      </AppShell>
+    );
+  }
+
+  return <>{children}</>;
+}

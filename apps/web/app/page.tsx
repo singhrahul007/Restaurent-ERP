@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Badge,
   Button,
@@ -23,18 +24,34 @@ import {
   UtensilsCrossed,
   Zap,
 } from "lucide-react";
+import { getCachedMe, loadSession, type Me } from "../lib/session";
+import { UserMenu } from "../components/user-menu";
 
-const MODULES = [
+type ModuleDef = {
+  title: string;
+  description: string;
+  href: string;
+  icon: typeof UtensilsCrossed;
+  badge: string;
+  badgeVariant: "primary" | "purple" | "warning" | "info" | "success" | "glass" | "default";
+  color: string;
+  iconColor: string;
+  actionLabel: string;
+  requiredPermissions: string[];
+};
+
+const MODULES: ModuleDef[] = [
   {
     title: "POS & Billing Register",
     description: "Next-gen touch register with split billing, multi-tender checkout, and thermal tax invoices.",
     href: "/pos",
     icon: UtensilsCrossed,
     badge: "Fast Lane",
-    badgeVariant: "primary" as const,
+    badgeVariant: "primary",
     color: "from-orange-500/20 to-amber-500/10 border-orange-500/30",
     iconColor: "text-orange-400",
     actionLabel: "Launch POS",
+    requiredPermissions: ["orders.create", "orders.view"],
   },
   {
     title: "Queue & Waitlist",
@@ -42,10 +59,11 @@ const MODULES = [
     href: "/queue",
     icon: Users,
     badge: "Smart Queue",
-    badgeVariant: "purple" as const,
+    badgeVariant: "purple",
     color: "from-purple-500/20 to-indigo-500/10 border-purple-500/30",
     iconColor: "text-purple-400",
     actionLabel: "Manage Queue",
+    requiredPermissions: ["tables.view", "orders.view", "reservations.view"],
   },
   {
     title: "Kitchen Display (KDS)",
@@ -53,10 +71,11 @@ const MODULES = [
     href: "/kds",
     icon: Flame,
     badge: "Live Orders",
-    badgeVariant: "warning" as const,
+    badgeVariant: "warning",
     color: "from-amber-500/20 to-red-500/10 border-amber-500/30",
     iconColor: "text-amber-400",
     actionLabel: "Open KDS",
+    requiredPermissions: ["kitchen.view"],
   },
   {
     title: "Rider & Delivery Tower",
@@ -64,10 +83,11 @@ const MODULES = [
     href: "/driver",
     icon: Bike,
     badge: "Fleet Active",
-    badgeVariant: "info" as const,
+    badgeVariant: "info",
     color: "from-blue-500/20 to-cyan-500/10 border-blue-500/30",
     iconColor: "text-blue-400",
     actionLabel: "Dispatch Tower",
+    requiredPermissions: ["delivery.view", "delivery.manage", "delivery.self"],
   },
   {
     title: "Executive Dashboard",
@@ -75,10 +95,11 @@ const MODULES = [
     href: "/dashboard",
     icon: LayoutDashboard,
     badge: "Analytics",
-    badgeVariant: "success" as const,
+    badgeVariant: "success",
     color: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30",
     iconColor: "text-emerald-400",
     actionLabel: "View Analytics",
+    requiredPermissions: ["reports.view"],
   },
   {
     title: "Manager Live Ops",
@@ -86,10 +107,11 @@ const MODULES = [
     href: "/ops",
     icon: Zap,
     badge: "15s Heartbeat",
-    badgeVariant: "glass" as const,
+    badgeVariant: "glass",
     color: "from-slate-500/20 to-slate-700/10 border-slate-600/30",
     iconColor: "text-emerald-300",
     actionLabel: "Monitor Ops",
+    requiredPermissions: ["orders.view", "restaurant.manage"],
   },
   {
     title: "System & Store Setup",
@@ -97,10 +119,11 @@ const MODULES = [
     href: "/setup/restaurant",
     icon: Settings,
     badge: "Admin",
-    badgeVariant: "default" as const,
+    badgeVariant: "default",
     color: "from-zinc-500/20 to-zinc-700/10 border-zinc-600/30",
     iconColor: "text-zinc-300",
     actionLabel: "Configure ERP",
+    requiredPermissions: ["restaurant.view", "restaurant.manage", "branch.view", "staff.view"],
   },
 ];
 
@@ -112,6 +135,20 @@ const STATS = [
 ];
 
 export default function HomePage() {
+  const [me, setMe] = useState<Me | null>(getCachedMe);
+
+  useEffect(() => {
+    if (!me) {
+      loadSession().then(setMe).catch(() => {});
+    }
+  }, [me]);
+
+  const visibleModules = MODULES.filter((mod) => {
+    if (!me) return true; // optimistic until loaded
+    if (me.user.isPlatformAdmin) return true;
+    return mod.requiredPermissions.some((perm) => me.permissions.includes(perm));
+  });
+
   return (
     <div className="relative min-h-screen bg-canvas text-fg-primary overflow-x-hidden selection:bg-accent/30 selection:text-white">
       {/* Dynamic Ambient Background Glows */}
@@ -144,12 +181,18 @@ export default function HomePage() {
             <Badge variant="success" dot pulse size="md">
               Socket Realtime Active
             </Badge>
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <Button asChild variant="gradient" size="sm" className="hidden sm:inline-flex">
-              <Link href="/pos">Open POS Register</Link>
-            </Button>
+            {me?.user ? (
+              <UserMenu />
+            ) : (
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/login">Sign in</Link>
+              </Button>
+            )}
+            {(!me || me.user.isPlatformAdmin || me.permissions.includes("orders.create")) && (
+              <Button asChild variant="gradient" size="sm" className="hidden sm:inline-flex">
+                <Link href="/pos">Open POS Register</Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -175,18 +218,22 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
-            <Button asChild variant="gradient" size="lg" className="shadow-lg shadow-orange-500/25">
-              <Link href="/pos">
-                Launch Point of Sale
-                <ArrowRight className="size-4 ml-1" />
-              </Link>
-            </Button>
-            <Button asChild variant="secondary" size="lg">
-              <Link href="/dashboard">
-                <LayoutDashboard className="size-4" />
-                Owner Analytics
-              </Link>
-            </Button>
+            {(!me || me.user.isPlatformAdmin || me.permissions.includes("orders.create")) && (
+              <Button asChild variant="gradient" size="lg" className="shadow-lg shadow-orange-500/25">
+                <Link href="/pos">
+                  Launch Point of Sale
+                  <ArrowRight className="size-4 ml-1" />
+                </Link>
+              </Button>
+            )}
+            {(!me || me.user.isPlatformAdmin || me.permissions.includes("reports.view")) && (
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/dashboard">
+                  <LayoutDashboard className="size-4" />
+                  Owner Analytics
+                </Link>
+              </Button>
+            )}
           </div>
         </FadeIn>
 
@@ -232,7 +279,7 @@ export default function HomePage() {
           </div>
 
           <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {MODULES.map((item) => {
+            {visibleModules.map((item) => {
               const Icon = item.icon;
               return (
                 <StaggerItem key={item.title}>
@@ -290,16 +337,20 @@ export default function HomePage() {
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
-                <Link href="/setup/restaurant">
-                  <Button variant="secondary" size="md">
-                    Store Configuration
-                  </Button>
-                </Link>
-                <Link href="/pos">
-                  <Button variant="gradient" size="md">
-                    Start Counter Shift
-                  </Button>
-                </Link>
+                {(!me || me.user.isPlatformAdmin || me.permissions.includes("restaurant.manage")) && (
+                  <Link href="/setup/restaurant">
+                    <Button variant="secondary" size="md">
+                      Store Configuration
+                    </Button>
+                  </Link>
+                )}
+                {(!me || me.user.isPlatformAdmin || me.permissions.includes("orders.create")) && (
+                  <Link href="/pos">
+                    <Button variant="gradient" size="md">
+                      Start Counter Shift
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

@@ -48,11 +48,15 @@ export const SYSTEM_ROLE_SLUGS = [
   "RESTAURANT_SINGLE",
   "RESTAURANT_OWNER",
   "RESTAURANT_MANAGER",
+  "BRANCH_MANAGER",
   "RECEPTIONIST",
   "CASHIER",
   "WAITER",
   "COOK",
   "DELIVERY_AGENT",
+  "INVENTORY_MANAGER",
+  "PURCHASE_MANAGER",
+  "ACCOUNTANT",
 ] as const;
 
 export type SystemRoleSlug = (typeof SYSTEM_ROLE_SLUGS)[number];
@@ -117,6 +121,30 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<
   RESTAURANT_MANAGER: ORG_PERMISSIONS.filter(
     (code) => code !== "settings.manage" && code !== "payments.refund",
   ),
+  BRANCH_MANAGER: [
+    "restaurant.view",
+    "branch.view",
+    "staff.view",
+    "menu.view",
+    "orders.view",
+    "orders.create",
+    "orders.update",
+    "orders.cancel",
+    "payments.view",
+    "payments.create",
+    "inventory.view",
+    "reports.view",
+    "customers.view",
+    "kitchen.view",
+    "kitchen.update",
+    "delivery.view",
+    "tables.view",
+    "tables.manage",
+    "reservations.view",
+    "reservations.manage",
+    "shifts.view",
+    "shifts.manage",
+  ],
   RECEPTIONIST: [
     "menu.view",
     "orders.view",
@@ -126,6 +154,8 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<
     "payments.view",
     "customers.view",
     "tables.view",
+    "reservations.view",
+    "reservations.manage",
   ],
   CASHIER: [
     "menu.view",
@@ -152,6 +182,25 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<
   ],
   COOK: ["kitchen.view", "kitchen.update", "orders.view", "tms.view", "tms.manage"],
   DELIVERY_AGENT: ["delivery.self", "orders.view"],
+  INVENTORY_MANAGER: [
+    "inventory.view",
+    "inventory.manage",
+    "reports.view",
+    "menu.view",
+  ],
+  PURCHASE_MANAGER: [
+    "inventory.view",
+    "inventory.manage",
+    "reports.view",
+    "settings.view",
+  ],
+  ACCOUNTANT: [
+    "reports.view",
+    "payments.view",
+    "payments.create",
+    "orders.view",
+    "settings.view",
+  ],
 };
 
 export function isPermissionCode(value: string): value is PermissionCode {

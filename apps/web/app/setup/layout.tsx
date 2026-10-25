@@ -2,17 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { AppFrame, AppShell, Sidebar, SidebarItem, Topbar } from "@niva/ui";
 import { Home } from "lucide-react";
 import { UserMenu, SidebarUserFooter } from "../../components/user-menu";
 import { SessionGate } from "../../lib/session-gate";
+import {
+  getCachedMe,
+  hasAnyPermission,
+  hasPermission,
+  isPlatformAdmin,
+  loadSession,
+  type Me,
+} from "../../lib/session";
 
 export default function SetupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const [me, setMe] = useState<Me | null>(getCachedMe);
+
+  useEffect(() => {
+    if (!me) {
+      loadSession().then(setMe).catch(() => {});
+    }
+  }, [me]);
+
+  const canReports = hasPermission("reports.view");
+  const canRestaurant = hasAnyPermission(["restaurant.view", "restaurant.manage"]);
+  const canBranches = hasAnyPermission(["branch.view", "branch.manage"]);
+  const canTables = hasAnyPermission(["tables.view", "tables.manage"]);
+  const canStaff = hasAnyPermission(["staff.view", "staff.manage"]);
+  const canMenu = hasAnyPermission(["menu.view", "menu.manage"]);
+  const canInventory = hasAnyPermission(["inventory.view", "inventory.manage"]);
+  const canOndc = hasAnyPermission(["settings.view", "settings.manage"]);
 
   return (
-    <SessionGate>
+    <SessionGate requiredAnyPermissions={["restaurant.view", "restaurant.manage", "branch.view", "branch.manage", "staff.view", "menu.view", "inventory.view"]}>
       <AppShell shell="owner">
         <AppFrame
           topbar={
@@ -50,56 +74,74 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
                   Home Hub
                 </SidebarItem>
               </Link>
-              <Link href="/dashboard">
-                <SidebarItem active={pathname === "/dashboard"}>
-                  Dashboard
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/restaurant">
-                <SidebarItem active={pathname.startsWith("/setup/restaurant")}>
-                  Restaurant
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/branches">
-                <SidebarItem active={pathname.startsWith("/setup/branches")}>
-                  Branches
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/tables">
-                <SidebarItem active={pathname.startsWith("/setup/tables")}>
-                  Tables
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/staff">
-                <SidebarItem active={pathname.startsWith("/setup/staff")}>
-                  Staff
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/menu">
-                <SidebarItem active={pathname.startsWith("/setup/menu")}>
-                  Menu
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/inventory">
-                <SidebarItem active={pathname.startsWith("/setup/inventory")}>
-                  Inventory
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/suppliers">
-                <SidebarItem active={pathname.startsWith("/setup/suppliers")}>
-                  Suppliers
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/recipes">
-                <SidebarItem active={pathname.startsWith("/setup/recipes")}>
-                  Recipes
-                </SidebarItem>
-              </Link>
-              <Link href="/setup/ondc">
-                <SidebarItem active={pathname.startsWith("/setup/ondc")}>
-                  ONDC Channel
-                </SidebarItem>
-              </Link>
+              {canReports && (
+                <Link href="/dashboard">
+                  <SidebarItem active={pathname === "/dashboard"}>
+                    Dashboard
+                  </SidebarItem>
+                </Link>
+              )}
+              {canRestaurant && (
+                <Link href="/setup/restaurant">
+                  <SidebarItem active={pathname.startsWith("/setup/restaurant")}>
+                    Restaurant
+                  </SidebarItem>
+                </Link>
+              )}
+              {canBranches && (
+                <Link href="/setup/branches">
+                  <SidebarItem active={pathname.startsWith("/setup/branches")}>
+                    Branches
+                  </SidebarItem>
+                </Link>
+              )}
+              {canTables && (
+                <Link href="/setup/tables">
+                  <SidebarItem active={pathname.startsWith("/setup/tables")}>
+                    Tables
+                  </SidebarItem>
+                </Link>
+              )}
+              {canStaff && (
+                <Link href="/setup/staff">
+                  <SidebarItem active={pathname.startsWith("/setup/staff")}>
+                    Staff
+                  </SidebarItem>
+                </Link>
+              )}
+              {canMenu && (
+                <Link href="/setup/menu">
+                  <SidebarItem active={pathname.startsWith("/setup/menu")}>
+                    Menu
+                  </SidebarItem>
+                </Link>
+              )}
+              {canInventory && (
+                <>
+                  <Link href="/setup/inventory">
+                    <SidebarItem active={pathname.startsWith("/setup/inventory")}>
+                      Inventory
+                    </SidebarItem>
+                  </Link>
+                  <Link href="/setup/suppliers">
+                    <SidebarItem active={pathname.startsWith("/setup/suppliers")}>
+                      Suppliers
+                    </SidebarItem>
+                  </Link>
+                  <Link href="/setup/recipes">
+                    <SidebarItem active={pathname.startsWith("/setup/recipes")}>
+                      Recipes
+                    </SidebarItem>
+                  </Link>
+                </>
+              )}
+              {canOndc && (
+                <Link href="/setup/ondc">
+                  <SidebarItem active={pathname.startsWith("/setup/ondc")}>
+                    ONDC Channel
+                  </SidebarItem>
+                </Link>
+              )}
             </Sidebar>
           }
         >

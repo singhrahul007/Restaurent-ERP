@@ -32,6 +32,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { ApiError, api } from "../../lib/api";
+import { SessionGate } from "../../lib/session-gate";
 
 type Sales = {
   today: { orderCount: number; revenueMinor: number; aovMinor: number };
@@ -55,6 +56,14 @@ function formatInr(minor: number) {
 }
 
 export default function OwnerDashboardPage() {
+  return (
+    <SessionGate requiredPermission="reports.view">
+      <OwnerDashboardContent />
+    </SessionGate>
+  );
+}
+
+function OwnerDashboardContent() {
   const [status, setStatus] = useState<"loading" | "empty" | "ready" | "error">("loading");
   const [error, setError] = useState("Could not load dashboard");
   const [sales, setSales] = useState<Sales | null>(null);

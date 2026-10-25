@@ -92,6 +92,8 @@ export function createTenancyRepository(db: Database) {
       const granted = new Set<PermissionCode>();
       if (isPlatformAdmin) {
         granted.add("platform.manage");
+        granted.add("roles.view");
+        granted.add("roles.manage");
       }
       if (!organizationId) {
         return granted;

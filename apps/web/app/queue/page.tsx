@@ -42,6 +42,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { ApiError, api } from "../../lib/api";
+import { SessionGate } from "../../lib/session-gate";
 
 export type QueueItem = {
   id: string;
@@ -75,6 +76,14 @@ export type Branch = {
 const MUTE_KEY = "niva_queue_mute";
 
 export default function QueuePage() {
+  return (
+    <SessionGate requiredAnyPermissions={["tables.view", "orders.view", "reservations.view"]}>
+      <QueueContent />
+    </SessionGate>
+  );
+}
+
+function QueueContent() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);

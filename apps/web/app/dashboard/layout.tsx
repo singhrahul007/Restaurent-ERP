@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { AppFrame, AppShell, Badge, Sidebar, SidebarItem, Topbar } from "@niva/ui";
 import {
   Bike,
@@ -16,13 +16,34 @@ import {
   Zap,
 } from "lucide-react";
 import { SessionGate } from "../../lib/session-gate";
-import { getCachedMe } from "../../lib/session";
+import {
+  getCachedMe,
+  hasAnyPermission,
+  hasPermission,
+  isPlatformAdmin,
+  loadSession,
+  type Me,
+} from "../../lib/session";
 import { UserMenu, SidebarUserFooter } from "../../components/user-menu";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const me = getCachedMe();
-  const isAdmin = me?.user?.isPlatformAdmin || me?.memberships?.some(m => m.roles.includes("SUPER_ADMIN"));
+  const [me, setMe] = useState<Me | null>(getCachedMe);
+
+  useEffect(() => {
+    if (!me) {
+      loadSession().then(setMe).catch(() => {});
+    }
+  }, [me]);
+
+  const canPlatform = isPlatformAdmin() || hasAnyPermission(["platform.manage", "roles.view", "roles.manage"]);
+  const canReports = hasPermission("reports.view");
+  const canOps = hasAnyPermission(["orders.view", "restaurant.manage"]);
+  const canPos = hasAnyPermission(["orders.create", "orders.view"]);
+  const canQueue = hasAnyPermission(["tables.view", "orders.view", "reservations.view"]);
+  const canKds = hasPermission("kitchen.view");
+  const canDriver = hasAnyPermission(["delivery.view", "delivery.manage", "delivery.self"]);
+  const canSetup = hasAnyPermission(["restaurant.view", "restaurant.manage", "branch.view", "staff.view"]);
 
   return (
     <SessionGate>
@@ -63,13 +84,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <Badge variant="success" dot pulse size="sm">
                     Live
                   </Badge>
-                  <Link
-                    href="/pos"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-accent-hover transition-colors"
-                  >
-                    <UtensilsCrossed className="size-3.5" />
-                    Open POS
-                  </Link>
+                  {canPos && (
+                    <Link
+                      href="/pos"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-accent-hover transition-colors"
+                    >
+                      <UtensilsCrossed className="size-3.5" />
+                      Open POS
+                    </Link>
+                  )}
                   <UserMenu />
                 </div>
               }
@@ -98,74 +121,92 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   Home Hub
                 </SidebarItem>
               </Link>
-              <Link href="/dashboard">
-                <SidebarItem
-                  active={pathname === "/dashboard"}
-                  icon={<LayoutDashboard className="size-4" />}
-                >
-                  Analytics & P&L
-                </SidebarItem>
-              </Link>
-              <Link href="/ops">
-                <SidebarItem
-                  active={pathname === "/ops"}
-                  icon={<Zap className="size-4" />}
-                  badge={<Badge variant="primary" size="sm">Live</Badge>}
-                >
-                  Manager Ops
-                </SidebarItem>
-              </Link>
+              {canReports && (
+                <Link href="/dashboard">
+                  <SidebarItem
+                    active={pathname === "/dashboard"}
+                    icon={<LayoutDashboard className="size-4" />}
+                  >
+                    Analytics & P&L
+                  </SidebarItem>
+                </Link>
+              )}
+              {canOps && (
+                <Link href="/ops">
+                  <SidebarItem
+                    active={pathname === "/ops"}
+                    icon={<Zap className="size-4" />}
+                    badge={<Badge variant="primary" size="sm">Live</Badge>}
+                  >
+                    Manager Ops
+                  </SidebarItem>
+                </Link>
+              )}
 
-              <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
-                Operations
-              </div>
-              <Link href="/pos">
-                <SidebarItem
-                  active={pathname === "/pos"}
-                  icon={<UtensilsCrossed className="size-4" />}
-                >
-                  POS Register
-                </SidebarItem>
-              </Link>
-              <Link href="/queue">
-                <SidebarItem
-                  active={pathname === "/queue"}
-                  icon={<Users className="size-4" />}
-                  badge={<Badge variant="purple" size="sm">Tokens</Badge>}
-                >
-                  Queue & Waitlist
-                </SidebarItem>
-              </Link>
-              <Link href="/kds">
-                <SidebarItem
-                  active={pathname === "/kds"}
-                  icon={<Flame className="size-4" />}
-                >
-                  Kitchen KDS
-                </SidebarItem>
-              </Link>
-              <Link href="/driver">
-                <SidebarItem
-                  active={pathname.startsWith("/driver")}
-                  icon={<Bike className="size-4" />}
-                >
-                  Rider Fleet
-                </SidebarItem>
-              </Link>
+              {(canPos || canQueue || canKds || canDriver) && (
+                <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+                  Operations
+                </div>
+              )}
+              {canPos && (
+                <Link href="/pos">
+                  <SidebarItem
+                    active={pathname === "/pos"}
+                    icon={<UtensilsCrossed className="size-4" />}
+                  >
+                    POS Register
+                  </SidebarItem>
+                </Link>
+              )}
+              {canQueue && (
+                <Link href="/queue">
+                  <SidebarItem
+                    active={pathname === "/queue"}
+                    icon={<Users className="size-4" />}
+                    badge={<Badge variant="purple" size="sm">Tokens</Badge>}
+                  >
+                    Queue & Waitlist
+                  </SidebarItem>
+                </Link>
+              )}
+              {canKds && (
+                <Link href="/kds">
+                  <SidebarItem
+                    active={pathname === "/kds"}
+                    icon={<Flame className="size-4" />}
+                  >
+                    Kitchen KDS
+                  </SidebarItem>
+                </Link>
+              )}
+              {canDriver && (
+                <Link href="/driver">
+                  <SidebarItem
+                    active={pathname.startsWith("/driver")}
+                    icon={<Bike className="size-4" />}
+                  >
+                    Rider Fleet
+                  </SidebarItem>
+                </Link>
+              )}
 
-              <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
-                Configuration
-              </div>
-              <Link href="/setup/restaurant">
-                <SidebarItem
-                  active={pathname.startsWith("/setup")}
-                  icon={<Settings className="size-4" />}
-                >
-                  Store Setup
-                </SidebarItem>
-              </Link>
+              {canSetup && (
+                <>
+                  <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+                    Configuration
+                  </div>
+                  <Link href="/setup/restaurant">
+                    <SidebarItem
+                      active={pathname.startsWith("/setup")}
+                      icon={<Settings className="size-4" />}
+                    >
+                      Store Setup
+                    </SidebarItem>
+                  </Link>
+                </>
+              )}
 
-              {isAdmin && (
+              {canPlatform && (
                 <>
                   <div className="mt-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-amber-500/90 flex items-center gap-1.5">
                     <span>Admin Control</span>

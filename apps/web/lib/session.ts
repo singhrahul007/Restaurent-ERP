@@ -14,6 +14,8 @@ export type Me = {
     isOwner: boolean;
     roles: string[];
   }>;
+  permissions: string[];
+  activeOrganizationId: string | null;
 };
 
 let cachedMe: Me | null = null;
@@ -34,13 +36,16 @@ export function clearCachedSession(): void {
   sessionReady = false;
 }
 
-export function loadSession(): Promise<Me> {
+export function loadSession(forceRefresh = false): Promise<Me> {
+  if (forceRefresh) {
+    inflight = null;
+  }
   if (!inflight) {
     inflight = api<Me>("/auth/me")
       .then((me) => {
         sessionReady = true;
         cachedMe = me;
-        const organizationId = me.memberships[0]?.organizationId;
+        const organizationId = me.activeOrganizationId || me.memberships[0]?.organizationId;
         if (organizationId && typeof window !== "undefined") {
           window.localStorage.setItem("niva_organization_id", organizationId);
         }
@@ -54,6 +59,33 @@ export function loadSession(): Promise<Me> {
       });
   }
   return inflight;
+}
+
+export function hasPermission(code: string): boolean {
+  if (!cachedMe) return false;
+  if (cachedMe.user.isPlatformAdmin) return true;
+  return cachedMe.permissions.includes(code);
+}
+
+export function hasAnyPermission(codes: string[]): boolean {
+  if (!cachedMe) return false;
+  if (cachedMe.user.isPlatformAdmin) return true;
+  return codes.some((code) => cachedMe!.permissions.includes(code));
+}
+
+export function hasAllPermissions(codes: string[]): boolean {
+  if (!cachedMe) return false;
+  if (cachedMe.user.isPlatformAdmin) return true;
+  return codes.every((code) => cachedMe!.permissions.includes(code));
+}
+
+export function isPlatformAdmin(): boolean {
+  if (!cachedMe) return false;
+  return Boolean(
+    cachedMe.user.isPlatformAdmin ||
+      cachedMe.memberships.some((m) => m.roles.includes("SUPER_ADMIN")) ||
+      cachedMe.permissions.includes("platform.manage"),
+  );
 }
 
 export function isUnauthorized(error: unknown): boolean {
@@ -74,4 +106,3 @@ export async function logout(): Promise<void> {
     window.location.href = "/login";
   }
 }
-

@@ -85,7 +85,7 @@ function formatPaise(minor: number) {
 
 export default function PosPage() {
   return (
-    <SessionGate>
+    <SessionGate requiredAnyPermissions={["orders.create", "orders.view"]}>
       <PosContent />
     </SessionGate>
   );

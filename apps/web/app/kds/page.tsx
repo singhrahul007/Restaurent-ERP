@@ -21,6 +21,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { ApiError, api } from "../../lib/api";
+import { SessionGate } from "../../lib/session-gate";
 
 export type TicketItem = {
   id: string;
@@ -90,6 +91,14 @@ function playAlert() {
 }
 
 export default function KdsPage() {
+  return (
+    <SessionGate requiredPermission="kitchen.view">
+      <KdsContent />
+    </SessionGate>
+  );
+}
+
+function KdsContent() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("Could not load kitchen");

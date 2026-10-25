@@ -18,6 +18,7 @@ import {
   rolePermissions,
   roles,
   users,
+  writeAudit,
 } from "@niva/database";
 import {
   PERMISSION_CODES,
@@ -99,7 +100,89 @@ export const platformRoutes: FastifyPluginAsync<{
     },
   );
 
-  // 2. Update permissions for a role
+  // 2. Create custom role
+  app.post<{
+    Body: {
+      name: string;
+      slug?: string;
+      permissions?: string[];
+    };
+  }>(
+    "/roles",
+    { schema: { tags: ["platform"] }, preHandler: platformOnly },
+    async (request, reply) => {
+      const { name, permissions: initialPerms = [] } = request.body;
+      if (!name || name.trim().length === 0) {
+        reply.status(400);
+        return { success: false, error: { message: "Role name is required" } };
+      }
+
+      const generatedSlug = (request.body.slug?.trim() || name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_"))
+        .replace(/^_+|_+$/g, "");
+
+      const [existing] = await opts.db
+        .select()
+        .from(roles)
+        .where(eq(roles.slug, generatedSlug))
+        .limit(1);
+
+      if (existing) {
+        reply.status(409);
+        return { success: false, error: { message: `Role with slug '${generatedSlug}' already exists` } };
+      }
+
+      const [newRole] = await opts.db
+        .insert(roles)
+        .values({
+          name: name.trim(),
+          slug: generatedSlug,
+          isSystem: false,
+        })
+        .returning();
+
+      if (!newRole) {
+        reply.status(500);
+        return { success: false, error: { message: "Failed to create role" } };
+      }
+
+      if (initialPerms.length > 0) {
+        const dbPerms = await opts.db
+          .select({ id: permissions.id, code: permissions.code })
+          .from(permissions)
+          .where(inArray(permissions.code, initialPerms as PermissionCode[]));
+
+        if (dbPerms.length > 0) {
+          await opts.db.insert(rolePermissions).values(
+            dbPerms.map((p) => ({
+              roleId: newRole.id,
+              permissionId: p.id,
+            })),
+          );
+        }
+      }
+
+      await writeAudit(opts.db, {
+        action: "role.create",
+        resourceType: "roles",
+        resourceId: newRole.id,
+        actorId: request.authUser?.id,
+        metadata: { slug: newRole.slug, name: newRole.name, permissions: initialPerms },
+      });
+
+      return {
+        success: true,
+        data: {
+          role: {
+            ...newRole,
+            permissions: initialPerms,
+          },
+        },
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  // 3. Update permissions for a role
   app.put<{
     Params: { roleId: string };
     Body: { permissions: string[] };
@@ -142,6 +225,14 @@ export const platformRoutes: FastifyPluginAsync<{
         );
       }
 
+      await writeAudit(opts.db, {
+        action: "role.permissions.update",
+        resourceType: "roles",
+        resourceId: targetRole.id,
+        actorId: request.authUser?.id,
+        metadata: { slug: targetRole.slug, permissions: dbPerms.map((p) => p.code) },
+      });
+
       return {
         success: true,
         data: {
@@ -153,7 +244,51 @@ export const platformRoutes: FastifyPluginAsync<{
     },
   );
 
-  // 3. Get all restaurants, branches, and user assignments for Access Control Studio
+  // 4. Delete custom role (system roles cannot be deleted)
+  app.delete<{
+    Params: { roleId: string };
+  }>(
+    "/roles/:roleId",
+    { schema: { tags: ["platform"] }, preHandler: platformOnly },
+    async (request, reply) => {
+      const { roleId } = request.params;
+
+      const [targetRole] = await opts.db
+        .select()
+        .from(roles)
+        .where(eq(roles.id, roleId))
+        .limit(1);
+
+      if (!targetRole) {
+        reply.status(404);
+        return { success: false, error: { message: "Role not found" } };
+      }
+
+      if (targetRole.isSystem) {
+        reply.status(400);
+        return { success: false, error: { message: "System roles cannot be deleted" } };
+      }
+
+      // Delete custom role (cascades to rolePermissions)
+      await opts.db.delete(roles).where(eq(roles.id, roleId));
+
+      await writeAudit(opts.db, {
+        action: "role.delete",
+        resourceType: "roles",
+        resourceId: targetRole.id,
+        actorId: request.authUser?.id,
+        metadata: { slug: targetRole.slug, name: targetRole.name },
+      });
+
+      return {
+        success: true,
+        data: { ok: true, deletedRoleId: roleId },
+        meta: { requestId: request.id },
+      };
+    },
+  );
+
+  // 5. Get all restaurants, branches, and user assignments for Access Control Studio
   app.get(
     "/access-control/directory",
     { schema: { tags: ["platform"] }, preHandler: platformOnly },
@@ -222,7 +357,7 @@ export const platformRoutes: FastifyPluginAsync<{
     },
   );
 
-  // 4. Assign or unassign branches to a user's membership
+  // 6. Assign or unassign branches to a user's membership
   app.post<{
     Body: {
       membershipId: string;
@@ -250,6 +385,15 @@ export const platformRoutes: FastifyPluginAsync<{
           })),
         );
       }
+
+      await writeAudit(opts.db, {
+        action: "access_control.assign_branches",
+        resourceType: "memberships",
+        resourceId: membershipId,
+        actorId: request.authUser?.id,
+        organizationId,
+        metadata: { branchIds },
+      });
 
       return {
         success: true,

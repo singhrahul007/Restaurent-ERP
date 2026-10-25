@@ -12,7 +12,7 @@ export default function OpsLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <SessionGate>
+    <SessionGate requiredAnyPermissions={["orders.view", "restaurant.manage"]}>
       <AppShell shell="kds">
         <AppFrame
           topbar={
